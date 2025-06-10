@@ -1,0 +1,5 @@
+{
+  "name": "Gestor de Campañas de Hipermercado",
+  "description": "Una aplicación web para rastrear y gestionar campañas de marketing de hipermercado, incluyendo sus tipos, fechas, tareas y estados.",
+  "requestFramePermissions": []
+}
