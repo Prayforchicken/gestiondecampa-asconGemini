@@ -19,3 +19,24 @@ export function readFile(file: File): Promise<string> {
     r.readAsText(file);
   });
 }
+
+/**
+ * Copia texto al portapapeles. En páginas no seguras (http://IP de casa) no existe
+ * `navigator.clipboard`: usamos el método antiguo con un cuadro de texto temporal.
+ */
+export function copyText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+  return new Promise((ok, ko) => {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    const done = document.execCommand('copy');
+    area.remove();
+    if (done) ok();
+    else ko(Error('No se pudo copiar'));
+  });
+}

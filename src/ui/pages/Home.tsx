@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import {
   ArrowDownToLine,
+  BookOpen,
   House,
   ArrowUpFromLine,
   Backpack,
@@ -36,7 +37,7 @@ import { uid } from '../../domain/format';
 import { AVATAR_COLORS } from '../../domain/seed';
 import type { AvatarColor, Member, State } from '../../domain/types';
 import { Avatar, IconBadge, PageHeading, num, str } from '../common';
-import { download, readFile } from '../download';
+import { copyText, download, readFile } from '../download';
 
 const COLOR_NAMES: Record<AvatarColor, string> = { peach: 'Melocotón', purple: 'Lavanda', mint: 'Menta', sky: 'Cielo', rose: 'Rosa', sand: 'Arena' };
 
@@ -53,7 +54,16 @@ export function HomePage() {
   const members = state.household.members;
   return (
     <>
-      <PageHeading overline="Ajustes" title="Hogar" subtitle="Quién vive aquí y cómo se comparten los datos." />
+      <PageHeading
+        overline="Ajustes"
+        title="Hogar"
+        subtitle="Quién vive aquí y cómo se comparten los datos."
+        action={
+          <a className="button secondary compact" href="./guia/index.html">
+            <BookOpen size={16} /> Guía de uso
+          </a>
+        }
+      />
       <DevicesHomes />
       <div className="settings-grid">
         <section className="card settings-card">
@@ -134,9 +144,14 @@ export function HomePage() {
                   <RefreshCw size={16} /> Sincronizar
                 </button>
               </div>
-              <button className="text-button danger spaced" onClick={() => open('disconnect')}>
-                Desconectar este dispositivo
-              </button>
+              <div className="button-row spaced">
+                <button className="text-button" onClick={() => open('server-address')}>
+                  Cambiar la dirección del ordenador
+                </button>
+                <button className="text-button danger" onClick={() => open('disconnect')}>
+                  Desconectar este dispositivo
+                </button>
+              </div>
             </>
           ) : (
             <>
@@ -292,6 +307,7 @@ export function MorePage({ badge }: { badge: (tab: Tab) => number }) {
     { tab: 'campanas', name: 'Campañas', desc: 'Tu trabajo, tarea a tarea', icon: BriefcaseBusiness, color: 'blue' },
     { tab: 'hogar', name: 'Hogar', desc: 'Personas, móviles y copias', icon: Users, color: 'neutral' },
     { action: () => open('ai'), name: 'Una mano con IA', desc: 'Recetas, tickets y kits', icon: Sparkles, color: 'green' },
+    { action: () => (location.href = './guia/index.html'), name: 'Guía de uso', desc: 'Instalar, invitar y usar la app', icon: BookOpen, color: 'neutral' },
   ];
   return (
     <>
@@ -514,8 +530,7 @@ const InviteModal: ModalComp = () => {
         <button
           className="button primary"
           onClick={() =>
-            navigator.clipboard
-              .writeText(link)
+            copyText(link)
               .then(() => toast('Enlace copiado'))
               .catch(() => toast('No se pudo copiar: selecciona el texto'))
           }
@@ -532,7 +547,7 @@ const InviteModal: ModalComp = () => {
         <Share2 size={18} />
         <span>
           ¿Solo quieres probar desde el móvil? La <strong>versión móvil mínima</strong> únicamente pide y manda datos a casa:{' '}
-          <button className="text-button" onClick={() => navigator.clipboard.writeText(mobileLink(encodeInvite(invite), invite.server)).then(() => toast('Enlace a la versión móvil copiado')).catch(() => {})}>
+          <button className="text-button" onClick={() => copyText(mobileLink(encodeInvite(invite), invite.server)).then(() => toast('Enlace a la versión móvil copiado')).catch(() => {})}>
             copiar su enlace
           </button>
           .
@@ -579,6 +594,43 @@ const JoinModal: ModalComp = ({ data }) => {
           {busy ? 'Conectando…' : 'Unirme y sustituir los datos'}
         </button>
       </form>
+    </>
+  );
+};
+
+/** Si el ordenador cambia de IP (o pasas a usar Tailscale), se actualiza aquí. */
+const ServerAddressModal: ModalComp = () => {
+  const { store, snap, close, toast, setError } = useHome();
+  const [server, setServer] = useState(snap.sync?.server ?? '');
+  const [busy, setBusy] = useState(false);
+  return (
+    <>
+      <h2>Cambiar la dirección del ordenador</h2>
+      <p className="muted">Por ejemplo, si el router le ha dado otra IP o ahora usas Tailscale. Comprobamos que en la nueva dirección está este mismo hogar.</p>
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          try {
+            await store.changeServer(server);
+            close();
+            toast('Dirección actualizada');
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'No se pudo cambiar.');
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <label>
+          Nueva dirección
+          <input value={server} onChange={(e) => setServer(e.target.value)} placeholder="192.168.1.20:8787" required />
+        </label>
+        <button className="button primary full" type="submit" disabled={busy}>
+          {busy ? 'Comprobando…' : 'Guardar dirección'}
+        </button>
+      </form>
+      <p className="footnote">Cada móvil del hogar tiene que cambiarla también (o volver a unirse con un enlace nuevo).</p>
     </>
   );
 };
@@ -842,6 +894,7 @@ export const homeModals: Record<string, ModalComp> = {
   invite: InviteModal,
   join: JoinModal,
   disconnect: DisconnectModal,
+  'server-address': ServerAddressModal,
   estructura: EstructuraModal,
   restore: RestoreModal,
   reset: ResetModal,

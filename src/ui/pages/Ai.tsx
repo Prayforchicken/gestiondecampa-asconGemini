@@ -8,6 +8,7 @@ import { day } from '../../domain/dates';
 import { uid } from '../../domain/format';
 import { zodMessage } from '../../domain/schemas';
 import { IconBadge } from '../common';
+import { copyText } from '../download';
 
 const AiModal: ModalComp = () => {
   const { state, me, act, toast, setError } = useHome();
@@ -72,8 +73,7 @@ const AiModal: ModalComp = () => {
           <button
             className="button primary full"
             onClick={() =>
-              navigator.clipboard
-                .writeText(context)
+              copyText(context)
                 .then(() => {
                   setCopied(true);
                   toast('Copiado. Pégalo en tu chat de IA.');

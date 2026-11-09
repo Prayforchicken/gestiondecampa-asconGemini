@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Copia de la guía publicada; se sirve en /guia/ y va dentro de la APK. -->
+<style>
+  :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  .back { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; text-decoration: none; margin-bottom: 18px; }
+</style>
+<title>Guía de Comemos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: una columna de lectura; cada paso pone el texto junto a la captura del móvil
+     (lado a lado en pantallas anchas, uno debajo de otro en el teléfono). */
+  :root {
+    --bg: #f6f8f6;
+    --surface: #ffffff;
+    --ink: #1d2823;
+    --muted: #5f6d66;
+    --line: #dfe6e1;
+    --accent: #24775d;
+    --accent-ink: #ffffff;
+    --mint: #e5f1ea;
+    --code-bg: #eef3ef;
+    --warn-bg: #fff3e6;
+    --warn-ink: #8a5426;
+    --warn-line: #f0d8bf;
+    --frame: #1d2823;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111614; --surface: #19201c; --ink: #e5ece8; --muted: #9eaca5; --line: #2a342f;
+      --accent: #5cbb93; --accent-ink: #0d1a14; --mint: #1d2b24; --code-bg: #1f2823;
+      --warn-bg: #2b2117; --warn-ink: #f0c08f; --warn-line: #4a3624; --frame: #3b4842; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111614; --surface: #19201c; --ink: #e5ece8; --muted: #9eaca5; --line: #2a342f;
+    --accent: #5cbb93; --accent-ink: #0d1a14; --mint: #1d2b24; --code-bg: #1f2823;
+    --warn-bg: #2b2117; --warn-ink: #f0c08f; --warn-line: #4a3624; --frame: #3b4842; color-scheme: dark;
+  }
+
+  body { background: var(--bg); color: var(--ink); font: 17px/1.6 var(--body); }
+  .wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 72px; }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.1rem); font-weight: 800; letter-spacing: -0.01em; }
+  h3 { font-size: 1.2rem; font-weight: 600; }
+  p { margin: 0; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  strong { font-weight: 700; }
+  .ui { font-weight: 700; color: var(--ink); background: var(--mint); padding: 0 6px; border-radius: 5px; white-space: nowrap; }
+  code { font-family: var(--mono); font-size: 0.88em; background: var(--code-bg); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
+
+  /* Cabecera */
+  .intro { display: grid; gap: 18px; max-width: 68ch; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 800; font-size: 1.3rem; color: var(--accent); }
+  .brand svg { width: 34px; height: 34px; }
+  .lead { font-size: 1.15rem; color: var(--muted); }
+  .needs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 28px; padding: 0; list-style: none; }
+  .needs li { border-top: 3px solid var(--accent); background: var(--surface); padding: 14px 16px; border-radius: 0 0 10px 10px; }
+  .needs b { display: block; font-family: var(--display); font-size: 1.05rem; margin-bottom: 4px; }
+  .needs span { color: var(--muted); font-size: 0.95rem; }
+
+  nav.toc { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 8px; }
+  nav.toc a { text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 7px 12px; border-radius: 999px; font-size: 0.95rem; }
+  nav.toc a:hover { border-color: var(--accent); }
+
+  /* Capítulos */
+  section.chapter { margin-top: 64px; display: grid; gap: 22px; }
+  .chapter > header { display: grid; gap: 8px; max-width: 68ch; }
+  .kicker { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .chapter > header p { color: var(--muted); }
+
+  /* Pasos: texto + captura */
+  ol.steps { list-style: none; counter-reset: paso; margin: 0; padding: 0; display: grid; gap: 18px; }
+  ol.steps > li { counter-increment: paso; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  ol.steps > li.has-shot { grid-template-columns: minmax(0, 1fr) 250px; align-items: start; }
+  .step-text { display: grid; gap: 10px; min-width: 0; }
+  .step-text h3::before { content: counter(paso); display: inline-grid; place-items: center; width: 28px; height: 28px; margin-right: 10px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 0.95rem; vertical-align: 2px; }
+  .step-text ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+  .who { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+
+  figure.phone { margin: 0; justify-self: center; width: 100%; max-width: 250px; }
+  figure.phone img { display: block; width: 100%; aspect-ratio: 390 / 844; object-fit: cover; object-position: top; border-radius: 22px; border: 6px solid var(--frame); background: var(--surface); box-shadow: 0 10px 30px rgb(0 0 0 / 0.12); }
+  figure.phone figcaption { font-size: 0.85rem; color: var(--muted); text-align: center; margin-top: 8px; }
+
+  /* Uso diario: rejilla de pantallas */
+  .screens { display: grid; gap: 18px; }
+  .screen { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 18px; align-items: start; }
+  .screen.no-shot { grid-template-columns: minmax(0, 1fr); }
+  .screen figure.phone { max-width: 220px; }
+  .screen .step-text h3::before { content: none; }
+
+  /* Comandos con botón de copiar */
+  .cmd { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--code-bg); }
+  .cmd code { flex: 1; min-width: 0; background: none; padding: 10px 12px; font-size: 0.95rem; overflow-x: auto; white-space: nowrap; overflow-wrap: normal; }
+  .cmd button { border: 0; border-left: 1px solid var(--line); background: var(--surface); color: var(--accent); font: 600 0.85rem var(--body); padding: 0 14px; cursor: pointer; }
+  .cmd button.done { color: var(--muted); }
+
+  .tip, .warn { border-radius: 10px; padding: 12px 14px; font-size: 0.97rem; }
+  .tip { background: var(--mint); }
+  .warn { background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--warn-line); }
+  .tip b, .warn b { display: block; margin-bottom: 2px; }
+
+  /* Problemas frecuentes */
+  dl.faq { margin: 0; display: grid; gap: 12px; }
+  dl.faq > div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  dl.faq dt { font-weight: 700; font-family: var(--display); font-size: 1.05rem; }
+  dl.faq dd { margin: 6px 0 0; color: var(--ink); }
+  dl.faq dd ul { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 3px; }
+
+  footer { margin-top: 64px; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); padding-top: 18px; }
+
+  @media (max-width: 760px) {
+    body { font-size: 16px; }
+    ol.steps > li.has-shot, .screen { grid-template-columns: minmax(0, 1fr); }
+    figure.phone { max-width: 230px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+  html { scroll-behavior: smooth; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a class="back" href="../#/hogar">← Volver a Comemos</a>
+  <header class="intro">
+    <span class="brand">
+      <svg viewBox="166 142 274 274" aria-hidden="true"><path fill="currentColor" d="M352 150c-96 0-176 56-176 152 0 26 6 48 16 66 18-62 66-114 130-140-52 34-92 86-104 150 18 10 40 14 62 14 96 0 128-104 72-242z"/></svg>
+      comemos
+    </span>
+    <h1>Instalar y usar Comemos en casa</h1>
+    <p class="lead">Un ordenador de casa guarda los datos del hogar y cada persona usa la app en su móvil Android. Lo que apunta una persona lo ven las demás: la compra, la despensa, los tuppers, los gastos y las revisiones de la mochila de emergencia.</p>
+  </header>
+
+  <ul class="needs" aria-label="Qué necesitas">
+    <li><b>Un ordenador en casa</b><span>Windows, Mac o Linux. Tiene que estar encendido para que los móviles se pongan al día.</span></li>
+    <li><b>La APK de Comemos</b><span>El archivo <code>comemos-0.3.1.apk</code>. Te la pasa quien la tenga.</span></li>
+    <li><b>Móviles Android 6 o más</b><span>Conectados a la misma wifi que el ordenador (o con Tailscale, para usarla fuera).</span></li>
+  </ul>
+
+  <nav class="toc" aria-label="Contenido">
+    <a href="#ordenador">El ordenador de casa</a>
+    <a href="#movil">La app en el móvil</a>
+    <a href="#empezar">Crear el hogar e invitar</a>
+    <a href="#dia-a-dia">El día a día</a>
+    <a href="#varios">Varios ordenadores</a>
+    <a href="#actualizar">Actualizar y copias</a>
+    <a href="#problemas">Si algo falla</a>
+  </nav>
+
+  <!-- ============ ORDENADOR ============ -->
+  <section class="chapter" id="ordenador">
+    <header>
+      <span class="kicker">Una sola vez · lo hace una persona</span>
+      <h2>El ordenador de casa</h2>
+      <p>Es el «servidor del hogar»: guarda los datos de todos y reparte los cambios entre los móviles. Se instala una vez y luego solo hay que dejarlo abierto.</p>
+    </header>
+    <ol class="steps">
+      <li>
+        <div class="step-text">
+          <h3>Instala Node.js</h3>
+          <p>Entra en <a href="https://nodejs.org/es" target="_blank" rel="noopener">nodejs.org</a>, descarga la versión <strong>LTS</strong> (22 o superior) e instálala con las opciones que vienen marcadas.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-text">
+          <h3>Descarga Comemos</h3>
+          <p>Descarga el proyecto y descomprímelo en una carpeta fácil de encontrar, por ejemplo <code>Documentos\comemos</code>:</p>
+          <p><a href="https://github.com/Prayforchicken/gestiondecampa-asconGemini/archive/refs/heads/ccr-626def4c-565x1z.zip" target="_blank" rel="noopener">Descargar Comemos (ZIP)</a></p>
+          <p class="tip"><b>Cuando la versión nueva pase a la rama principal</b>, el enlace será el de «Code → Download ZIP» en la página del proyecto en GitHub.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-text">
+          <h3>Abre una terminal en esa carpeta</h3>
+          <ul>
+            <li><strong>Windows 11:</strong> clic derecho en la carpeta → <span class="ui">Abrir en Terminal</span>.</li>
+            <li><strong>Mac:</strong> abre Terminal, escribe <code>cd </code> (con espacio), arrastra la carpeta a la ventana y pulsa Intro.</li>
+            <li><strong>Linux:</strong> clic derecho → <span class="ui">Abrir en una terminal</span>.</li>
+          </ul>
+        </div>
+      </li>
+      <li>
+        <div class="step-text">
+          <h3>Prepara Comemos (solo la primera vez)</h3>
+          <p>Escribe esto y pulsa Intro. Tarda unos minutos:</p>
+          <div class="cmd"><code>npm ci</code><button type="button" data-copy="npm ci">Copiar</button></div>
+        </div>
+      </li>
+      <li>
+        <div class="step-text">
+          <h3>Arranca el servidor</h3>
+          <div class="cmd"><code>npm run serve</code><button type="button" data-copy="npm run serve">Copiar</button></div>
+          <p>Cuando veas <code>🏠 Servidor del hogar en http://localhost:8787</code>, ya está. <strong>Deja esa ventana abierta</strong>: si la cierras, el servidor se para.</p>
+          <p class="warn"><b>Windows preguntará si permites el acceso a la red a Node.js.</b> Marca <span class="ui">Redes privadas</span> y pulsa <span class="ui">Permitir</span>. Si no, los móviles no podrán conectarse.</p>
+          <p>Las próximas veces solo hace falta abrir la terminal en la carpeta y escribir <code>npm run serve</code>.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-text">
+          <h3>Apunta la dirección del ordenador</h3>
+          <p>Es lo que escribiréis en los móviles. Se compone de la IP del ordenador y el puerto <code>8787</code>, por ejemplo <code>192.168.1.20:8787</code>.</p>
+          <ul>
+            <li><strong>Windows:</strong> abre otra terminal, escribe <code>ipconfig</code> y busca <span class="ui">Dirección IPv4</span>.</li>
+            <li><strong>Mac:</strong> Ajustes del Sistema → Red → Wi-Fi → Detalles → Dirección IP.</li>
+            <li><strong>Linux:</strong> escribe <code>hostname -I</code>.</li>
+          </ul>
+          <p>Para comprobarlo, abre en el navegador del móvil <code>http://192.168.1.20:8787</code> (con tu IP): tiene que salir Comemos.</p>
+          <p class="tip"><b>Consejo: que la IP no cambie.</b> En la configuración del router, reserva esa IP para el ordenador («reserva DHCP» o «IP estática»). Si alguna vez cambia, en la app: Hogar → <span class="ui">Cambiar la dirección del ordenador</span>.</p>
+        </div>
+      </li>
+    </ol>
+    <div class="tip"><b>Opcional: usarla también fuera de casa con Tailscale.</b> Instala <a href="https://tailscale.com" target="_blank" rel="noopener">Tailscale</a> (gratis) en el ordenador y en los móviles con la misma cuenta. En la terminal del ordenador escribe <code>tailscale serve --bg 8787</code>. Te dará una dirección como <code>https://mi-ordenador.tu-red.ts.net</code>: úsala en lugar de la IP y funcionará desde cualquier sitio.</div>
+  </section>
+
+  <!-- ============ MÓVIL ============ -->
+  <section class="chapter" id="movil">
+    <header>
+      <span class="kicker">Cada persona, en su móvil</span>
+      <h2>La app en el móvil</h2>
+      <p>Comemos no está en Google Play: se instala desde el archivo APK. Android avisa porque no viene de la tienda; es normal.</p>
+    </header>
+    <ol class="steps">
+      <li>
+        <div class="step-text">
+          <h3>Pasa la APK al móvil</h3>
+          <p>Por Telegram, WhatsApp (mandándotela a ti), Google Drive o con un cable. Ábrela desde la conversación o desde <span class="ui">Descargas</span>.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-text">
+          <h3>Permite la instalación</h3>
+          <p>Android dirá que no puede instalar apps de esa fuente. Pulsa <span class="ui">Ajustes</span>, activa <span class="ui">Permitir de esta fuente</span>, vuelve atrás y pulsa <span class="ui">Instalar</span>.</p>
+          <p>Si sale Google Play Protect, pulsa <span class="ui">Más detalles</span> → <span class="ui">Instalar de todas formas</span>.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-text">
+          <h3>Abre Comemos</h3>
+          <p>Verás dos opciones. Quien empieza elige <span class="ui">Crear un hogar</span>; los demás, <span class="ui">Tengo una invitación</span>. Lo explicamos ahora.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ EMPEZAR ============ -->
+  <section class="chapter" id="empezar">
+    <header>
+      <span class="kicker">Una sola vez</span>
+      <h2>Crear el hogar e invitar al resto</h2>
+      <p>Una persona crea el hogar, lo conecta al ordenador y manda un enlace a las demás.</p>
+    </header>
+    <ol class="steps">
+      <li class="has-shot">
+        <div class="step-text">
+          <span class="who">Quien empieza</span>
+          <h3>Crea el hogar</h3>
+          <p>Escribe el nombre del hogar, tu nombre primero y el de quien viva contigo. Si tenéis mascota, añádela.</p>
+          <p>La casilla de ejemplos llena la app con recetas e inventario de muestra para curiosear. Se pueden borrar después; si preferís empezar en limpio, desmárcala.</p>
+          <p>Pulsa <span class="ui">Crear hogar</span>.</p>
+        </div>
+        <figure class="phone"><img src="img/01-crear-hogar.jpg" alt="Pantalla de bienvenida con el nombre del hogar, Adrián, Rali y la mascota Lenny" loading="lazy"><figcaption>Crear un hogar</figcaption></figure>
+      </li>
+      <li class="has-shot">
+        <div class="step-text">
+          <span class="who">Quien empieza</span>
+          <h3>Conecta el hogar al ordenador</h3>
+          <p>Ve a <span class="ui">Más</span> → <span class="ui">Hogar</span> → <span class="ui">Conectar a un servidor</span>.</p>
+          <p>Escribe la dirección del ordenador, por ejemplo <code>192.168.1.20:8787</code>, y pulsa <span class="ui">Conectar y crear invitación</span>.</p>
+        </div>
+        <figure class="phone"><img src="img/03-conectar.jpg" alt="Ventana Conectar a un servidor con la dirección 192.168.1.20:8787" loading="lazy"><figcaption>Conectar al ordenador</figcaption></figure>
+      </li>
+      <li class="has-shot">
+        <div class="step-text">
+          <span class="who">Quien empieza</span>
+          <h3>Manda la invitación</h3>
+          <p>Pulsa <span class="ui">Copiar enlace</span> y mándaselo a quien viva contigo por WhatsApp o Telegram. Si queréis invitarla más tarde: Hogar → <span class="ui">Invitar</span>.</p>
+          <p class="warn"><b>El enlace es la llave del hogar.</b> Quien lo tenga puede ver y cambiar los datos. Compártelo solo con quien vive contigo.</p>
+        </div>
+        <figure class="phone"><img src="img/04-invitar.jpg" alt="Ventana Invitar al hogar con un código QR y el enlace" loading="lazy"><figcaption>Invitar al hogar</figcaption></figure>
+      </li>
+      <li class="has-shot">
+        <div class="step-text">
+          <span class="who">Rali y los demás</span>
+          <h3>Únete con el enlace</h3>
+          <p>Instala la APK y abre Comemos. Elige <span class="ui">Tengo una invitación</span>.</p>
+          <p>En WhatsApp, <strong>mantén pulsado</strong> el mensaje con el enlace → <span class="ui">Copiar</span>. Pégalo en la app y pulsa <span class="ui">Unirme</span>.</p>
+          <p class="tip"><b>Si tocas el enlace</b> se abre la versión web en el navegador. También funciona, pero para usar la app hay que pegarlo dentro.</p>
+        </div>
+        <figure class="phone"><img src="img/05-unirse.jpg" alt="Pantalla Únete a tu hogar con el enlace de invitación pegado" loading="lazy"><figcaption>Unirse con el enlace</figcaption></figure>
+      </li>
+      <li class="has-shot">
+        <div class="step-text">
+          <span class="who">Rali y los demás</span>
+          <h3>Elige quién eres</h3>
+          <p>Toca tu nombre. El móvil lo recuerda y desde entonces tus cambios llevan tu nombre.</p>
+          <p>Si alguien no aparece, hay que añadirlo antes: Hogar → <span class="ui">Añadir persona (nuevo compañero de piso)</span>, y después mandarle la invitación.</p>
+        </div>
+        <figure class="phone"><img src="img/06-quien-eres.jpg" alt="Pantalla ¿Quién eres? con Adrián y Rali" loading="lazy"><figcaption>¿Quién eres?</figcaption></figure>
+      </li>
+    </ol>
+    <div class="tip"><b>Cuando alguien se va del piso</b>, no se borra: en Hogar → Personas, edítalo y desmarca <span class="ui">Vive en casa</span>. Así se conservan sus gastos y las cuentas siguen cuadrando.</div>
+  </section>
+
+  <!-- ============ DÍA A DÍA ============ -->
+  <section class="chapter" id="dia-a-dia">
+    <header>
+      <span class="kicker">Cada día</span>
+      <h2>El día a día</h2>
+      <p>Abajo tienes <span class="ui">Hoy</span>, <span class="ui">Cocina</span>, <span class="ui">Inventario</span>, <span class="ui">Compra</span> y <span class="ui">Más</span> (gastos, kits, campañas y ajustes del hogar). El icono de la nube, arriba, dice si estás al día con el ordenador; tócalo para sincronizar.</p>
+    </header>
+
+    <div class="screens">
+      <article class="screen">
+        <div class="step-text">
+          <h3>Hoy</h3>
+          <p>Lo importante de un vistazo: lo que toca revisar, cuentas pendientes, las próximas comidas, los tuppers que hay que gastar primero y lo que caduca pronto.</p>
+          <p>Con <span class="ui">Añadir</span> apuntas cualquier cosa: una compra, un gasto, algo para la lista, un kit…</p>
+        </div>
+        <figure class="phone"><img src="img/02-hoy.jpg" alt="Pantalla Hoy con cuentas y próximas comidas" loading="lazy"></figure>
+      </article>
+
+      <article class="screen">
+        <div class="step-text">
+          <h3>Cocina: tuppers, recetas y plan</h3>
+          <ul>
+            <li><strong>Cocinar:</strong> abre una receta, ajusta las cantidades y escribe el peso final de lo cocinado. Se descuenta del inventario y queda un tupper.</li>
+            <li><strong>Servir:</strong> en un tupper pulsa <span class="ui">Servir</span>, marca quién come y cuánto. Lo que sobra sigue en el tupper.</li>
+            <li><strong>Plan:</strong> apunta comidas para los próximos días. Si llevan congelados, la app recuerda sacarlos 12 horas antes.</li>
+          </ul>
+        </div>
+        <figure class="phone"><img src="img/14-servir.jpg" alt="Ventana Un plato para cada uno con Adrián y Rali" loading="lazy"></figure>
+      </article>
+
+      <article class="screen">
+        <div class="step-text">
+          <h3>Inventario y códigos internos</h3>
+          <p><span class="ui">Añadir artículo</span>: escribe el nombre y, si quieres, el EAN (el número del código de barras). La app propone el tipo («¿Es Arroz integral?») y le da un <strong>código interno</strong> como <code>11.02.02.003</code>.</p>
+          <p>Los 6 primeros dígitos son el tipo de producto, así que dos arroces integrales de marcas distintas tienen EAN distintos y códigos casi iguales: <code>11.02.02.001</code> y <code>11.02.02.002</code>.</p>
+          <p>Si compras más de algo que ya tienes, abre el artículo y pulsa <span class="ui">Otro lote</span>: guarda su propia cantidad y fecha.</p>
+        </div>
+        <figure class="phone"><img src="img/07-anadir-articulo.jpg" alt="Ventana Añadir al inventario con EAN, tipo Arroz integral y código interno 11.02.02.003" loading="lazy"></figure>
+      </article>
+
+      <article class="screen">
+        <div class="step-text">
+          <h3>Ver por tipo y buscar</h3>
+          <p>En Inventario, <span class="ui">Por tipo</span> junta todo lo que es lo mismo y suma la cantidad: todo el arroz integral, de la marca que sea.</p>
+          <p>El buscador acepta nombre, código (<code>11.02</code>) o EAN.</p>
+        </div>
+        <figure class="phone"><img src="img/08-por-tipo.jpg" alt="Inventario agrupado por tipo con tres arroces integrales 11.02.02.001, .002 y .003" loading="lazy"></figure>
+      </article>
+
+      <article class="screen">
+        <div class="step-text">
+          <h3>Compra</h3>
+          <p>La lista es compartida y va ordenada por secciones, para recorrer la tienda en orden. Toca el cuadrado para marcar lo comprado y, al terminar, <span class="ui">Retirar comprados</span>.</p>
+          <p>Marcar algo no lo añade al inventario: eso se hace al guardar la compra (a mano o con el ticket y la IA).</p>
+        </div>
+        <figure class="phone"><img src="img/09-compra.jpg" alt="Lista de la compra agrupada por sección" loading="lazy"></figure>
+      </article>
+
+      <article class="screen">
+        <div class="step-text">
+          <h3>Gastos y cuentas</h3>
+          <p><span class="ui">Más</span> → <span class="ui">Gastos</span> → <span class="ui">Añadir gasto</span>: concepto, importe, quién paga y entre quién se reparte. Lo pagado con la cuenta común no genera deudas.</p>
+          <p>En <strong>Cuentas entre vosotros</strong> ves quién debe a quién y el mínimo de pagos para quedar en paz. Cuando alguien pague (un Bizum, por ejemplo), pulsa <span class="ui">Registrar pago</span>.</p>
+        </div>
+        <figure class="phone"><img src="img/10-gastos.jpg" alt="Cuentas entre vosotros: Rali debe 4,45 € a Adrián" loading="lazy"></figure>
+      </article>
+
+      <article class="screen">
+        <div class="step-text">
+          <h3>Kits y revisiones: la mochila de emergencia</h3>
+          <p><span class="ui">Más</span> → <span class="ui">Kits y revisiones</span> → <span class="ui">Crear mochila de emergencia</span>. Trae lo habitual para aguantar 72 horas; cambia las cantidades a vuestra medida.</p>
+          <ul>
+            <li>Apunta las <strong>fechas de caducidad</strong> del agua, las latas y las medicinas tocando cada artículo.</li>
+            <li>Las tareas periódicas ya vienen puestas: cambiar las pilas cada 12 meses, recargar la batería externa cada 3…</li>
+            <li>Cuando hagas una, pulsa su botón (<span class="ui">Hecho</span>, <span class="ui">Recargar</span>, <span class="ui">Cambiar pilas</span>) y el siguiente aviso se recalcula solo.</li>
+          </ul>
+        </div>
+        <figure class="phone"><img src="img/11-mochila.jpg" alt="Detalle de la mochila de emergencia con el botón Revisar ahora" loading="lazy"></figure>
+      </article>
+
+      <article class="screen">
+        <div class="step-text">
+          <h3>La revisión guiada</h3>
+          <p>Cada seis meses (o cuando quieras), <span class="ui">Revisar ahora</span>. Para cada cosa elige <span class="ui">Bien</span>, <span class="ui">Repuesto</span> o <span class="ui">Falta</span>. Lo que falta se añade solo a la lista de la compra.</p>
+          <p class="tip"><b>Avisos con la app cerrada:</b> pulsa <span class="ui">Calendario</span> (o <span class="ui">Exportar avisos al calendario</span>) y abre el archivo en el móvil. Google Calendar te avisará una semana antes y el mismo día. Repítelo después de cada revisión.</p>
+        </div>
+        <figure class="phone"><img src="img/12-revision.jpg" alt="Revisión de la mochila con Bien, Repuesto y Falta para cada artículo" loading="lazy"></figure>
+      </article>
+
+      <article class="screen no-shot">
+        <div class="step-text">
+          <h3>Mi espacio: campañas</h3>
+          <p>En <span class="ui">Más</span> → <span class="ui">Campañas</span> está tu gestor de campañas del trabajo. Solo sale en tu perfil. Al crear una campaña nacional se generan las 11 tareas de siempre con su fecha (Steeple 2 días antes, Meta y X 1 día antes, Newsletter el lunes). Puedes importar el JSON que exportabas en el gestor antiguo.</p>
+        </div>
+      </article>
+
+      <article class="screen no-shot">
+        <div class="step-text">
+          <h3>Una mano con IA</h3>
+          <p>El botón con estrellitas copia un resumen del hogar para pegarlo en tu chat de IA favorito («¿qué cocino con lo que caduca?», «apunta este ticket»). La IA responde con un texto que pegas de vuelta; la app te enseña cada cambio y solo lo aplica si pulsas <span class="ui">Aplicar</span>. Nada se envía solo.</p>
+        </div>
+      </article>
+    </div>
+
+    <dl class="faq" aria-label="Qué significa el estado de la nube">
+      <div><dt>Sincronizado</dt><dd>Estás al día con el ordenador.</dd></div>
+      <div><dt>Sin conexión · 2 pendientes</dt><dd>No llega al ordenador (estás fuera de casa o está apagado). Puedes seguir usando la app: los cambios se guardan en el móvil y se envían solos cuando vuelva la conexión.</dd></div>
+      <div><dt>Un cambio tuyo no se pudo aplicar</dt><dd>Otra persona cambió lo mismo antes. Por ejemplo, los dos os servisteis el último tupper sin conexión: solo cuenta el primero. Revísalo y, si hace falta, repítelo.</dd></div>
+    </dl>
+  </section>
+
+  <!-- ============ VARIOS ORDENADORES ============ -->
+  <section class="chapter" id="varios">
+    <header>
+      <span class="kicker">Cuando haga falta</span>
+      <h2>Varios hogares y ordenadores</h2>
+      <p>Un mismo móvil puede tener el piso actual, el siguiente o la casa de tu familia, cada uno con su propio ordenador. Los datos no se mezclan.</p>
+    </header>
+    <ol class="steps">
+      <li class="has-shot">
+        <div class="step-text">
+          <h3>Añade otro hogar</h3>
+          <p><span class="ui">Más</span> → <span class="ui">Hogar</span> → <span class="ui">Añadir otro hogar u ordenador</span> → <span class="ui">Continuar</span>. Después, crea uno nuevo o únete con el enlace de invitación de ese otro ordenador.</p>
+          <p>Para cambiar de hogar, en la misma lista pulsa <span class="ui">Abrir</span>. Con la <strong>×</strong> lo quitas del móvil; sus datos siguen en su ordenador.</p>
+          <p class="tip"><b>¿Os mudáis y cambia el ordenador o la IP?</b> Hogar → <span class="ui">Cambiar la dirección del ordenador</span>. La app comprueba que en la nueva dirección está el mismo hogar.</p>
+        </div>
+        <figure class="phone"><img src="img/13-hogares.jpg" alt="Lista Hogares en este dispositivo con Piso de la calle Mayor y Casa de mis padres" loading="lazy"><figcaption>Hogares en este dispositivo</figcaption></figure>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ ACTUALIZAR Y COPIAS ============ -->
+  <section class="chapter" id="actualizar">
+    <header>
+      <span class="kicker">De vez en cuando</span>
+      <h2>Actualizar y hacer copias</h2>
+    </header>
+    <div class="screens">
+      <article class="screen no-shot">
+        <div class="step-text">
+          <h3>Instalar una versión nueva</h3>
+          <p>Abre la APK nueva e instálala <strong>encima</strong>, sin desinstalar la anterior: los datos se conservan.</p>
+          <p class="warn"><b>Para quien compila la app:</b> todas las versiones deben firmarse con la misma clave (<code>comemos-release.jks</code> y <code>keystore.properties</code>, en la carpeta <code>android</code>) y llevar un número de versión mayor en <code>package.json</code>. Luego, <code>npm run android:apk</code>. Si se pierde la clave, habrá que desinstalar la app y volver a unirse con un enlace.</p>
+        </div>
+      </article>
+      <article class="screen no-shot">
+        <div class="step-text">
+          <h3>Copias de seguridad</h3>
+          <ul>
+            <li><strong>En el ordenador:</strong> todo el hogar está en la carpeta <code>data</code> dentro de Comemos. Cópiala de vez en cuando a un disco o a tu nube.</li>
+            <li><strong>Desde la app:</strong> Hogar → <span class="ui">Descargar copia</span> guarda un archivo con todo. Con <span class="ui">Restaurar una copia</span> se recupera.</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============ PROBLEMAS ============ -->
+  <section class="chapter" id="problemas">
+    <header>
+      <span class="kicker">Soluciones rápidas</span>
+      <h2>Si algo falla</h2>
+    </header>
+    <dl class="faq">
+      <div>
+        <dt>«No se puede conectar con ese servidor»</dt>
+        <dd>
+          <ul>
+            <li>¿Está el ordenador encendido y la ventana de <code>npm run serve</code> abierta?</li>
+            <li>¿Está el móvil en la misma wifi (o con Tailscale activado)?</li>
+            <li>¿Has puesto el puerto? Es <code>192.168.1.20:8787</code>, no solo la IP.</li>
+            <li>¿Ha cambiado la IP del ordenador? Mírala otra vez con <code>ipconfig</code> y usa <span class="ui">Cambiar la dirección del ordenador</span>.</li>
+            <li>En Windows, permite a Node.js en <span class="ui">Redes privadas</span> (Firewall de Windows → Permitir una aplicación).</li>
+          </ul>
+        </dd>
+      </div>
+      <div>
+        <dt>Android no deja instalar la APK</dt>
+        <dd>Activa <span class="ui">Permitir de esta fuente</span> para la app con la que abres el archivo (Telegram, Archivos, Chrome…). Si dice «App no instalada» al actualizar, la APK nueva está firmada con otra clave: desinstala, instala la nueva y vuelve a unirte con un enlace.</dd>
+      </div>
+      <div>
+        <dt>No aparezco en «¿Quién eres?»</dt>
+        <dd>Alguien del hogar tiene que añadirte en Hogar → <span class="ui">Añadir persona</span>. En tu móvil, espera unos segundos con la app abierta: la lista se actualiza sola.</dd>
+      </div>
+      <div>
+        <dt>He elegido a la persona equivocada</dt>
+        <dd>Toca tu inicial arriba a la derecha (o abajo del todo en el ordenador) y elige quién eres.</dd>
+      </div>
+      <div>
+        <dt>Los cambios de otra persona no me llegan</dt>
+        <dd>Toca el icono de la nube para sincronizar. La app también lo hace sola cada pocos segundos mientras está abierta.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <footer>Comemos 0.3.1 · Las capturas son de un hogar de ejemplo.</footer>
+</div>
+
+<script>
+  // Botones «Copiar» de los comandos.
+  document.querySelectorAll('[data-copy]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const text = btn.getAttribute('data-copy');
+      const done = () => { btn.textContent = 'Copiado'; btn.classList.add('done'); setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('done'); }, 1800); };
+      const fallback = () => {
+        const code = btn.previousElementSibling;
+        const range = document.createRange();
+        range.selectNodeContents(code);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        btn.textContent = 'Seleccionado';
+      };
+      try {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } catch (e) {
+        fallback();
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

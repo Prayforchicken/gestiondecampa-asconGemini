@@ -5,6 +5,7 @@
 // prefijo distinto, así nunca se mezclan. El perfil «principal» usa las claves de siempre
 // (sin prefijo), para no mover los datos que ya existían.
 import { KEYS, prefixedKV, type KV } from './store';
+import { uid } from '../domain/format';
 
 export type ProfileSummary = {
   id: string;
@@ -23,7 +24,7 @@ export const MAIN_PROFILE = 'principal';
 export class Profiles {
   constructor(
     private kv: KV,
-    private ids: () => string = () => crypto.randomUUID().slice(0, 8),
+    private ids: () => string = () => uid().slice(0, 8),
   ) {}
 
   private read(): Registry {

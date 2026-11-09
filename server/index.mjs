@@ -192,6 +192,8 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
   '.ico': 'image/x-icon',
   '.txt': 'text/plain; charset=utf-8',
 };
@@ -206,6 +208,7 @@ function serveStatic(req, res, url) {
   }
   let file = resolve(join(DIST, path));
   if (!file.startsWith(DIST + sep) && file !== DIST) return fail(res, 403, 'No permitido.');
+  if (existsSync(file) && statSync(file).isDirectory() && existsSync(join(file, 'index.html'))) file = join(file, 'index.html'); // p. ej. /guia/
   if (!existsSync(file) || statSync(file).isDirectory()) file = join(DIST, 'index.html'); // la app decide la pantalla
   const type = TYPES[extname(file)] || 'application/octet-stream';
   const immutable = file.includes(`${sep}assets${sep}`);

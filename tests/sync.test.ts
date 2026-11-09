@@ -132,3 +132,18 @@ test('sin conexión los cambios esperan y se envían después', async () => {
   assert.equal(flaky.getSnapshot().status, 'idle');
   assert.equal(flaky.getSnapshot().pending, 0);
 });
+
+test('si el ordenador cambia de dirección, el móvil la actualiza', async () => {
+  const ana = new HouseholdStore(memoryKV());
+  const s = newHousehold({ name: 'Casa', people: ['Ana'], pets: [] }, ids);
+  ana.createLocal(s, s.household.members[0].id);
+  // Se conecta con una dirección «antigua» (127.0.0.1) y luego pasa a «localhost».
+  const old = url.replace('localhost', '127.0.0.1');
+  await ana.connectNew(old);
+  const fresh = url.replace('127.0.0.1', 'localhost');
+  await ana.changeServer(fresh.replace(/^http:\/\//, ''));
+  assert.equal(ana.getSnapshot().sync?.server, fresh);
+  assert.equal(ana.getSnapshot().status, 'idle');
+  await assert.rejects(() => ana.changeServer('127.0.0.1:1'), /No se puede conectar/);
+});
+

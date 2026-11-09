@@ -14,6 +14,7 @@ import { applyAndLog, replay } from '../domain/reducer';
 import type { MemberId, State } from '../domain/types';
 import { migrateV1, withLegacyCampaigns } from '../domain/migrate';
 import { normalizeServer } from './native';
+import { uid } from '../domain/format';
 
 export type SyncConfig = { server: string; householdId: string; secret: string };
 export type RejectedNotice = { id: string; label: string; reason: string; at: string };
@@ -87,7 +88,7 @@ export class HouseholdStore {
 
   constructor(
     private kv: KV,
-    private ids: () => string = () => crypto.randomUUID(),
+    private ids: () => string = uid,
     private fetcher: typeof fetch = (...a) => fetch(...a),
   ) {
     this.device = this.loadDevice();
@@ -313,6 +314,30 @@ export class HouseholdStore {
     this.status = 'idle';
     this.persist();
     this.recompute();
+  }
+
+  /**
+   * El ordenador del hogar cambió de dirección (nueva IP, Tailscale...). Comprueba que en la
+   * nueva dirección está el MISMO hogar con la misma clave y, si es así, la guarda.
+   */
+  async changeServer(input: string) {
+    const cfg = this.data?.sync;
+    if (!cfg) throw Error('Este hogar no está conectado a ningún ordenador.');
+    const server = normalizeServer(input);
+    await this.checkServer(server);
+    const candidate = { ...cfg, server };
+    try {
+      await this.request(candidate, '');
+    } catch (e) {
+      const status = (e as { status?: number }).status;
+      if (status === 404) throw Error('Ese ordenador no tiene este hogar. ¿Es la dirección correcta?');
+      if (status === 401) throw Error('En esa dirección hay un hogar con otra clave.');
+      throw e;
+    }
+    this.data!.sync = candidate;
+    this.persist();
+    this.emit();
+    await this.sync();
   }
 
   /** Deja de sincronizar. Los datos se quedan en este dispositivo. */

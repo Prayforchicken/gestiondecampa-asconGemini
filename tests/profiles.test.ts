@@ -41,3 +41,17 @@ test('direcciones de servidor escritas a mano', () => {
   assert.equal(normalizeServer('https://casa.tu-red.ts.net/'), 'https://casa.tu-red.ts.net');
   assert.equal(normalizeServer('  http://portatil:8787// '), 'http://portatil:8787');
 });
+
+test('identificadores también en páginas no seguras (http://IP de casa)', async () => {
+  const { uid } = await import('../src/domain/format');
+  const original = crypto.randomUUID;
+  Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true });
+  try {
+    const a = uid();
+    assert.match(a, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    assert.notEqual(a, uid());
+  } finally {
+    Object.defineProperty(crypto, 'randomUUID', { value: original, configurable: true });
+  }
+});
+

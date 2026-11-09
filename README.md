@@ -1,5 +1,7 @@
 # comemos · nuestro hogar en una sola app
 
+> **¿Solo quieres instalarla y usarla?** Lee la [guía de uso](public/guia/index.html), que también está dentro de la app (Hogar → Guía de uso) y en `http://IP-del-ordenador:8787/guia/`.
+
 Una app para Adrián, Rali, Lenny 🐈 y quien venga a vivir al piso más adelante. Junta en un solo sitio lo que antes estaba repartido:
 
 | Pantalla | Para qué sirve |
@@ -114,7 +116,7 @@ La app completa también existe como **APK de Android** (`io.github.prayforchick
 
 ### Instalarla
 
-1. Pasa `comemos-0.3.0.apk` al móvil (Drive, Telegram, cable...).
+1. Pasa `comemos-0.3.1.apk` al móvil (Drive, Telegram, cable...).
 2. Ábrela. Android pedirá permiso para «instalar apps de origen desconocido» desde esa app: acéptalo solo para esto.
 3. Abre **Comemos** y elige: crear un hogar o **«Tengo una invitación»** (pega el enlace que da *Hogar → Invitar* en otro dispositivo).
 
