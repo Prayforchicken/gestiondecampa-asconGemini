@@ -1,0 +1,97 @@
+/* Kits e inventarios personales: lista, detalle, plantillas y revisión guiada. */
+
+/* ---------- Lista ---------- */
+.kit-dues { padding: 20px 20px 8px; margin-bottom: 22px; }
+.kit-dues .section-title > div > svg { color: #c09250; }
+.kit-dues .alert-row .pill { flex-shrink: 0; }
+
+.kit-card { display: block; width: 100%; padding: 0; text-align: left; overflow: hidden; }
+.kit-card:hover { border-color: #d6e3d9; }
+.kit-card .quantity { margin: 14px 0 10px; }
+.kit-next { font-size: 11px !important; color: #7f8a83; line-height: 1.5; }
+.kit-privacy { display: flex; gap: 6px; align-items: center; }
+
+/* ---------- Detalle ---------- */
+.kit-back { margin-bottom: 16px; font-size: 12px; }
+.kit-header { padding: 24px; margin-bottom: 20px; }
+.kit-header-main { display: flex; gap: 18px; align-items: flex-start; }
+.kit-header-main > div { min-width: 0; }
+.kit-header h1 { font-size: 30px; letter-spacing: -1px; margin-bottom: 6px; overflow-wrap: anywhere; }
+.kit-header .muted { font-size: 12px; }
+.kit-emoji { font-size: 46px; width: 74px; height: 74px; flex-shrink: 0; border-radius: 20px; background: #f4f6ef; display: grid; place-items: center; }
+.kit-notes { font-size: 12px; color: #6f7c6d; margin-top: 10px; white-space: pre-line; }
+.kit-health { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 18px 0; font-size: 12px; }
+.kit-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.kit-actions .button { flex: 0 1 auto; }
+
+.kit-items, .kit-history { padding: 20px 22px 8px; margin-bottom: 20px; }
+.kit-empty-items { padding: 16px 0; font-size: 12px; }
+
+.kit-item-row { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f0f2ed; }
+.kit-item-row:last-child { border-bottom: 0; }
+.kit-item-main { flex: 1; min-width: 0; display: flex; gap: 12px; align-items: flex-start; text-align: left; padding: 14px 0; }
+.kit-item-text { min-width: 0; display: grid; gap: 4px; }
+.kit-item-text strong { font-size: 13px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; overflow-wrap: anywhere; }
+.kit-item-text small { font-size: 11px; color: #8f998b; line-height: 1.45; }
+.kit-item-notes { color: #a3ab9d !important; font-style: italic; }
+.kit-done-button { flex-shrink: 0; font-size: 11px; max-width: 46%; }
+
+.kit-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; background: #8fc0a2; display: inline-block; }
+.kit-dot.soon { background: #e0aa6a; }
+.kit-dot.overdue { background: #d4785a; }
+.review-info .kit-dot { margin: 0 4px 0 0; vertical-align: middle; }
+
+.kit-history-row { display: flex; gap: 10px; align-items: center; padding: 11px 0; border-bottom: 1px solid #f0f2ed; font-size: 12px; color: #6f7c6d; flex-wrap: wrap; }
+.kit-history-row:last-child { border-bottom: 0; }
+.kit-history-row svg { color: #8fb79d; }
+.kit-history-row span { flex: 1; min-width: 160px; }
+.kit-history-row small { color: #a2ab9d; font-size: 10px; }
+.kit-history .muted { font-size: 12px; padding: 12px 0; }
+
+/* ---------- Modal: plantillas ---------- */
+.template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 6px; }
+.template-option { display: flex; gap: 12px; align-items: flex-start; text-align: left; padding: 14px; border: 1px solid #e3e9e3; border-radius: 13px; background: #fafcf9; }
+.template-option:hover { background: #f3f8f3; }
+.template-option.selected { border-color: #9cc7ad; background: #eef6f0; box-shadow: 0 0 0 1px #9cc7ad inset; }
+.template-option > span:last-child { display: grid; gap: 4px; min-width: 0; }
+.template-option strong { font-size: 13px; }
+.template-option small { font-size: 11px; color: #8f9a8a; line-height: 1.4; }
+.template-option .template-count { color: #5f8b6e; font-weight: 500; }
+.template-emoji { font-size: 28px; line-height: 1; }
+.kit-name-grid { grid-template-columns: 90px 1fr; }
+
+/* ---------- Modal: revisión ---------- */
+.review-summary { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 14px; }
+.review-list { border: 1px solid #e7ecdf; border-radius: 12px; padding: 0 14px; max-height: 52vh; overflow-y: auto; }
+.review-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 0; border-bottom: 1px solid #edf0e8; }
+.review-row:last-child { border-bottom: 0; }
+.review-row.missing { background: linear-gradient(90deg, #fdf3ee, transparent 70%); }
+.review-info { flex: 1; min-width: 180px; display: grid; gap: 4px; }
+.review-info strong { font-size: 12px; }
+.review-info small { font-size: 10px; color: #98a291; }
+.review-toggle { display: inline-flex; background: #f0f2ef; border-radius: 9px; padding: 3px; gap: 3px; flex-shrink: 0; max-width: 100%; }
+.review-toggle button { padding: 7px 10px; font-size: 11px; color: #85907f; border-radius: 7px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.review-toggle button.on { background: white; box-shadow: 0 1px 5px #20372113; font-weight: 600; }
+.review-toggle button.on.ok { color: #3f8460; }
+.review-toggle button.on.done { color: #4f7ea6; }
+.review-toggle button.on.missing { color: #b05f3e; }
+.modal .review-expiry { flex-basis: 100%; margin: 0; display: flex; align-items: center; gap: 10px; }
+.modal .review-expiry input { margin: 0; max-width: 200px; }
+.modal .checkbox-label { margin-top: 16px; }
+
+@media (max-width: 700px) {
+  .kit-header { padding: 18px; }
+  .kit-header h1 { font-size: 24px; }
+  .kit-emoji { width: 56px; height: 56px; font-size: 34px; border-radius: 16px; }
+  .kit-header-main { gap: 13px; }
+  .kit-actions .button { flex: 1 1 calc(50% - 5px); padding: 10px 8px; }
+  .kit-items, .kit-history { padding: 16px 16px 6px; }
+  .kit-item-row { flex-wrap: wrap; gap: 0 10px; padding-bottom: 10px; }
+  .kit-item-main { flex-basis: 100%; padding-bottom: 8px; }
+  .kit-done-button { margin-left: 21px; max-width: none; }
+  .template-grid { grid-template-columns: 1fr; }
+  .review-list { padding: 0 10px; max-height: 55vh; }
+  .review-toggle { width: 100%; }
+  .review-toggle button { flex: 1; justify-content: center; max-width: none; padding: 8px 6px; }
+  .toolbar > .button { width: 100%; }
+}

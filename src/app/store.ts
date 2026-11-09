@@ -237,6 +237,14 @@ export class HouseholdStore {
     this.recompute();
   }
 
+  /** Borra los datos del hogar de este dispositivo (no toca el servidor). */
+  reset() {
+    this.data = null;
+    this.kv.remove(KEYS.data);
+    this.status = 'local';
+    this.recompute();
+  }
+
   dismissRejected() {
     if (!this.data) return;
     this.data.rejected = [];
