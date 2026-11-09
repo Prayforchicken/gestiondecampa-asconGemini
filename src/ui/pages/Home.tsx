@@ -38,7 +38,10 @@ import { download, readFile } from '../download';
 
 const COLOR_NAMES: Record<AvatarColor, string> = { peach: 'Melocotón', purple: 'Lavanda', mint: 'Menta', sky: 'Cielo', rose: 'Rosa', sand: 'Arena' };
 
-const inviteLink = (code: string) => `${location.origin}${location.pathname}#unirse=${code}`;
+const appDir = () => location.origin + location.pathname.replace(/[^/]*$/, '');
+const inviteLink = (code: string) => `${appDir()}#unirse=${code}`;
+/** Enlace a la versión móvil mínima (prueba). */
+const mobileLink = (code: string) => `${appDir()}movil.html#unirse=${code}`;
 
 export function HomePage() {
   const { state, snap, store, open, act, nameOf, toast } = useHome();
@@ -464,6 +467,16 @@ const InviteModal: ModalComp = () => {
             <Share2 size={16} /> Compartir
           </button>
         )}
+      </div>
+      <div className="info-strip">
+        <Share2 size={18} />
+        <span>
+          ¿Solo quieres probar desde el móvil? La <strong>versión móvil mínima</strong> únicamente pide y manda datos a casa:{' '}
+          <button className="text-button" onClick={() => navigator.clipboard.writeText(mobileLink(encodeInvite(invite))).then(() => toast('Enlace a la versión móvil copiado')).catch(() => {})}>
+            copiar su enlace
+          </button>
+          .
+        </span>
       </div>
       <p className="footnote">El enlace incluye la clave del hogar: quien lo tenga puede ver y cambiar los datos. No lo publiques.</p>
     </>

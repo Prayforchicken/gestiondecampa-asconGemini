@@ -6,7 +6,7 @@ Una app para Adrián, Rali, Lenny 🐈 y quien venga a vivir al piso más adelan
 | --- | --- |
 | **Hoy** | Lo importante de un vistazo: próximas comidas, tuppers, lo que caduca, revisiones de kits, tareas de trabajo y cuentas pendientes. |
 | **Cocina** | Tuppers, recetas y plan. Cocinar descuenta del inventario; al repartir los platos se apunta lo que come cada persona y las sobras quedan como tupper. |
-| **Inventario** | Lotes con cantidad, fecha y sección (rayón / familia / subfamilia). Cada artículo puede ser de la casa o de una persona (su balda). Comparador de formatos por kg/l/ud. |
+| **Inventario** | Lotes con cantidad, fecha, EAN y código interno (sección · familia · tipo · artículo). Vista «por tipo», búsqueda por código o EAN y comparador de formatos por kg/l/ud. Cada artículo puede ser de la casa o de una persona (su balda). |
 | **Compra** | Lista compartida agrupada por sección, para recorrer la tienda en orden. |
 | **Gastos** | Quién paga, entre quién se reparte, saldos y «para quedar en paz» con el mínimo de pagos. La cuenta común no genera deudas. |
 | **Kits y revisiones** | Inventarios personales o de la casa: mochila de emergencia, botiquín, kit de la mascota... Caducidades, tareas periódicas (cambiar pilas cada 12 meses), revisión guiada y avisos en el calendario del móvil. |
@@ -71,21 +71,48 @@ Con `npm run serve` en marcha, abre en el móvil `http://IP-DEL-ORDENADOR:8787` 
 
 Los kits pueden ser de la casa (los ve todo el mundo) o de una persona (solo aparecen en su «Mi espacio»).
 
-## 4. Estructura de clasificación (Ábaco)
+## 4. Estructura de artículos y códigos internos
 
-En **Hogar → Importar estructura** puedes cargar el export SQL de TablePlus (`abaco_estructura`), un CSV o un JSON con las columnas `cod_departamento, desc_departamento, cod_rayon, desc_rayon, cod_familia, desc_familia, cod_subfamilia, desc_subfamilia`. Eliges qué departamentos usar (alimentación y frescos suelen bastar) y desde entonces, al añadir un artículo, puedes buscar «aceite», «tofu» o «pilas» y elegir la subfamilia.
+La app tiene **su propia estructura** en [`src/data/estructura.ts`](src/data/estructura.ts). Está inspirada en Ábaco, pero pensada para una casa: sin departamentos de tienda, con proteínas vegetales, mascotas, botiquín y emergencias, sinónimos para el buscador y proteína estimada por tipo.
 
-- El rayón **13** son los congelados: al planificar una comida con congelados, la app recuerda sacarlos 12 horas antes.
-- Los rayones **21** y **24** se llaman «Proteínas vegetales (seitán, tempeh, tofu)» y «Alternativas veganas y algas» en vuestro hogar.
-- **La estructura no se sube al repositorio** (que es público): se procesa en tu dispositivo y se comparte solo a través de vuestro servidor. El `.gitignore` bloquea los `.sql`.
+```
+1 Despensa                      ← departamento (1 dígito)
+  11 Alimentación seca @Despensa  ← sección (2 dígitos; el primero es su departamento)
+    02 Arroces                    ← familia (2 dígitos)
+      02 Arroz integral · prot 7.5 seco   ← tipo (2 dígitos) · sinónimos · proteína
+```
 
-Sin importar nada, la app usa una lista básica de secciones.
+**Código interno = sección · familia · tipo · artículo** (9 dígitos). El número de artículo lo pone la app al guardar:
 
-## 5. Una mano con IA
+| Artículo | EAN (fabricante) | Código interno |
+| --- | --- | --- |
+| Arroz integral, paquete 1 kg | 2000000000022 | **11.02.02**.001 |
+| Arroz integral, saco 5 kg | 2009876543213 | **11.02.02**.002 |
+| Arroz integral de otra marca, 1 kg | 2005550001239 | **11.02.02**.003 |
+
+Los EAN no tienen nada en común; los códigos internos solo cambian en el final. Para qué sirve:
+
+- **Inventario → Por tipo** junta todos los arroces integrales y suma lo que hay.
+- Se puede **buscar** por nombre, por código (`11.02`, `110202`) o por EAN.
+- Una **receta** puede pedir «cualquier arroz integral» (`tipo:110202`) y gastará primero el que caduque antes, sea de la marca que sea.
+- El **comparador** enseña todos los formatos del mismo tipo por precio por kilo.
+- Si escribes un EAN que ya existe, la app lo detecta y te propone añadirlo como lote de ese artículo.
+
+Los números los asigna la app (no el móvil), así dos personas sin conexión nunca dan el mismo número a artículos distintos. Los números ya existentes no deben cambiarse; para añadir tipos o familias, usa números libres. `npm test` comprueba que la estructura esté bien formada. El rayón **13** siguen siendo los congelados, el **21** las proteínas vegetales y el **24** las alternativas del mar y las algas.
+
+## 5. Versión móvil mínima (prueba)
+
+`movil.html` es una app aparte, muy ligera, que solo **pide y manda datos al ordenador de casa**: estado de la conexión, «Pedir datos», «Probar» (mide lo que tarda en responder), añadir a la compra, marcar comprados, apuntar un gasto y un resumen de lo que dice casa. No crea hogares: se une con el enlace de invitación. Guarda sus datos aparte, así no se mezcla con la app completa en el mismo móvil.
+
+1. En la app completa: **Hogar → Invitar → copiar su enlace** (versión móvil).
+2. Ábrelo en el móvil y pulsa **Conectar**.
+3. Para instalarla como app: menú del navegador → **Instalar app / Añadir a pantalla de inicio**. Android y iPhone solo instalan PWA servidas por **HTTPS** (Tailscale lo da hecho) o desde `localhost`. Por la wifi de casa con `http://IP:8787` funciona en el navegador, pero no se instala como app.
+
+## 6. Una mano con IA
 
 La app no llama a ninguna IA por su cuenta. Pulsa **Una mano con IA → Copiar contexto**, pégalo en tu chat favorito y pide, por ejemplo, «una receta con lo que caduca esta semana», «apunta este ticket» o «completa la mochila de emergencia para dos personas y un gato». La IA responde un JSON; lo pegas, la app lo **valida**, te enseña cada cambio y solo lo aplica si le das a «Aplicar».
 
-## 6. Venir de las versiones anteriores
+## 7. Venir de las versiones anteriores
 
 - **comemos 0.1**: si abres esta versión en el mismo navegador y dirección, tus datos se convierten solos (Adrián y Rali pasan a ser miembros del hogar).
 - **Gestor de campañas**: en la app antigua pulsa *Exportar* y en **Campañas → Importar JSON** carga el archivo. Si no tenían tareas, se crean las de la plantilla con sus fechas.
@@ -96,13 +123,16 @@ La app no llama a ninguna IA por su cuenta. Pulsa **Una mano con IA → Copiar c
 
 ```
 src/
+  data/
+    estructura.ts  La estructura de artículos de la app (texto fácil de editar)
   domain/        Reglas del hogar, sin pantallas (se pueden probar con Node)
     types.ts       Qué datos hay: miembros, lotes, recetas, kits, campañas...
     ops.ts         Cada cambio es una «operación» pequeña: cocinar, servir, añadir gasto...
     reducer.ts     Aplica una operación al estado. Es la ÚNICA forma de cambiar datos.
+    estructura.ts  Lee la estructura, forma los códigos internos, comprueba EAN y busca tipos
+    stock.ts       Existencias por artículo o por tipo («cualquier arroz integral»)
     kits.ts        Vencimientos, plantillas y calendario .ics
     money.ts       Saldos y pagos para quedar en paz
-    abaco.ts       Lector de la estructura SQL/CSV/JSON y buscador
     campaigns.ts   Plantillas de tareas con fechas, duplicar, importar
     ai.ts          Contexto para la IA y validación de su respuesta
   app/
@@ -111,6 +141,7 @@ src/
   ui/            Pantallas (React)
     App.tsx        Navegación, menú, ventanas
     pages/         Una pantalla por archivo
+  movil/         Versión móvil mínima (movil.html)
   styles/        Estilos
 server/index.mjs Servidor del hogar (Node, sin dependencias)
 tests/           Pruebas: npm test

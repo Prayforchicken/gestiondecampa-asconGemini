@@ -1,0 +1,43 @@
+/* Comemos móvil (prueba): una sola columna, botones grandes, nada más. */
+body { background: var(--bg); }
+.m-shell { max-width: 520px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); display: grid; gap: 14px; }
+.m-header { display: flex; align-items: center; gap: 10px; padding: 6px 2px; }
+.m-header .brand-symbol { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: #e7f2ec; font-size: 19px; margin: 0; }
+.m-header strong { font-size: 20px; letter-spacing: -.6px; }
+.m-header small { display: block; font-size: 11px; color: var(--muted); }
+.m-card { background: white; border: 1px solid #e8ece9; border-radius: 16px; padding: 18px; }
+.m-card h1 { font-size: 24px; letter-spacing: -.6px; line-height: 1.2; margin-bottom: 8px; }
+.m-card h2 { font-size: 15px; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.m-card > p.muted { font-size: 13px; margin-bottom: 14px; }
+.m-card textarea, .m-card input, .m-card select { width: 100%; min-width: 0; border: 1px solid #dfe6dc; background: #fafcf9; border-radius: 10px; padding: 12px; font-size: 16px; color: #2f3d33; }
+.m-card textarea { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; margin-bottom: 12px; resize: vertical; }
+.m-card .button { min-height: 46px; font-size: 14px; }
+.m-error { color: #ac644d; background: #fff0e9; border-radius: 9px; padding: 10px; font-size: 13px; margin-bottom: 12px; }
+.m-who { display: grid; gap: 10px; margin-top: 14px; }
+.m-who .button { justify-content: flex-start; }
+.m-status-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.m-status-row > div { flex: 1; min-width: 0; }
+.m-status-row strong { font-size: 15px; display: block; }
+.m-status-row small { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-status { border-left: 4px solid #69a786; }
+.m-status.sync-offline, .m-status.sync-error { border-left-color: #d29a5f; }
+.m-status.sync-syncing { border-left-color: #6b9fc9; }
+.m-status svg { color: #4f7a62; flex-shrink: 0; }
+.m-me { padding: 0; }
+.m-ping { font-size: 12px; color: #5d7064; margin-top: 10px; }
+.m-inline { margin-top: 12px; }
+.m-inline + .m-inline { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 14px; }
+.m-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6d7a6c; margin-bottom: 8px; font-weight: 500; }
+.m-row { display: flex; gap: 8px; margin-top: 8px; }
+.m-row > input:first-child, .m-row > select { flex: 1; }
+.m-row .m-small { width: 100px; flex: 0 0 100px; }
+.m-row .button { flex: 0 0 auto; padding: 0 16px; }
+.m-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.m-item:last-of-type { border-bottom: 0; }
+.m-item small { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; }
+.m-item .check-button { width: 26px; height: 26px; }
+.m-foot { font-size: 12px; margin-top: 8px; }
+.m-line { font-size: 13px; padding: 7px 0; color: #4a5a4e; line-height: 1.45; }
+.m-footer { display: flex; justify-content: space-between; padding: 4px 2px; }
+.m-footer .text-button { font-size: 13px; }
+.m-toast { left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); font-size: 13px; }
