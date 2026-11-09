@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import {
   ArrowDownToLine,
+  House,
   ArrowUpFromLine,
   Backpack,
   BriefcaseBusiness,
@@ -28,6 +29,7 @@ import {
 import { useHome, type Tab } from '../../app/context';
 import type { ModalComp } from '../App';
 import { decodeInvite, encodeInvite } from '../../app/store';
+import { isNative, normalizeServer } from '../../app/native';
 import { DEPARTMENTS, FAMILIES, SECTIONS, TYPES, formatCode, normalize } from '../../domain/estructura';
 import { day } from '../../domain/dates';
 import { uid } from '../../domain/format';
@@ -38,10 +40,12 @@ import { download, readFile } from '../download';
 
 const COLOR_NAMES: Record<AvatarColor, string> = { peach: 'Melocotón', purple: 'Lavanda', mint: 'Menta', sky: 'Cielo', rose: 'Rosa', sand: 'Arena' };
 
-const appDir = () => location.origin + location.pathname.replace(/[^/]*$/, '');
-const inviteLink = (code: string) => `${appDir()}#unirse=${code}`;
+// En la app Android la web vive dentro de la APK (https://localhost): los enlaces apuntan al
+// servidor del hogar, que también sirve la web.
+const appDir = (server: string) => (isNative() ? normalizeServer(server) + '/' : location.origin + location.pathname.replace(/[^/]*$/, ''));
+const inviteLink = (code: string, server: string) => `${appDir(server)}#unirse=${code}`;
 /** Enlace a la versión móvil mínima (prueba). */
-const mobileLink = (code: string) => `${appDir()}movil.html#unirse=${code}`;
+const mobileLink = (code: string, server: string) => `${appDir(server)}movil.html#unirse=${code}`;
 
 export function HomePage() {
   const { state, snap, store, open, act, nameOf, toast } = useHome();
@@ -50,6 +54,7 @@ export function HomePage() {
   return (
     <>
       <PageHeading overline="Ajustes" title="Hogar" subtitle="Quién vive aquí y cómo se comparten los datos." />
+      <DevicesHomes />
       <div className="settings-grid">
         <section className="card settings-card">
           <h2>El hogar</h2>
@@ -224,6 +229,60 @@ export function HomePage() {
   );
 }
 
+/** Hogares guardados en este dispositivo: cada uno con su ordenador (servidor). */
+function DevicesHomes() {
+  const { profiles, open } = useHome();
+  const list = profiles.summaries();
+  const active = profiles.active;
+  return (
+    <section className="card settings-card homes-card">
+      <div className="section-title">
+        <div>
+          <h2>Hogares en este dispositivo</h2>
+        </div>
+        <button className="button secondary compact" onClick={() => open('profile-add')}>
+          <Plus size={15} /> Añadir otro hogar u ordenador
+        </button>
+      </div>
+      <p className="muted">Cada hogar guarda sus datos aparte y se conecta a su propio ordenador. Cambia entre ellos cuando quieras.</p>
+      {list.map((p) => (
+        <div className={'member-row' + (p.id === active ? ' current' : '')} key={p.id}>
+          <span className="avatar sand">
+            <House size={15} />
+          </span>
+          <div>
+            <strong>
+              {p.name}
+              {p.id === active ? ' · abierto' : ''}
+            </strong>
+            <small>
+              {p.server ? p.server.replace(/^https?:\/\//, '') : 'Solo en este dispositivo'}
+              {p.members.length ? ` · ${p.members.join(', ')}` : ''}
+            </small>
+          </div>
+          {p.id !== active && (
+            <>
+              <button
+                className="button secondary compact"
+                onClick={() => {
+                  profiles.activate(p.id);
+                  location.hash = '#/hoy';
+                  location.reload();
+                }}
+              >
+                Abrir
+              </button>
+              <button className="icon-button" aria-label={'Quitar ' + p.name} onClick={() => open('profile-remove', { id: p.id })}>
+                ×
+              </button>
+            </>
+          )}
+        </div>
+      ))}
+    </section>
+  );
+}
+
 /** Menú «Más» del móvil. */
 export function MorePage({ badge }: { badge: (tab: Tab) => number }) {
   const { go, open, state } = useHome();
@@ -379,6 +438,7 @@ const ConnectModal: ModalComp = () => {
   const [busy, setBusy] = useState(false);
   // Si la app se sirve desde un servidor del hogar, lo proponemos directamente.
   useEffect(() => {
+    if (isNative()) return; // en la APK no hay servidor en «localhost»
     store
       .checkServer(location.origin)
       .then((r) => {
@@ -395,7 +455,7 @@ const ConnectModal: ModalComp = () => {
         onSubmit={async (e) => {
           e.preventDefault();
           const f = new FormData(e.currentTarget);
-          const url = server.trim().replace(/\/+$/, '');
+          const url = normalizeServer(server);
           setBusy(true);
           try {
             const info = await store.checkServer(url);
@@ -438,7 +498,7 @@ const InviteModal: ModalComp = () => {
   const { store, toast } = useHome();
   const invite = store.invite();
   const [svg, setSvg] = useState('');
-  const link = invite ? inviteLink(encodeInvite(invite)) : '';
+  const link = invite ? inviteLink(encodeInvite(invite), invite.server) : '';
   useEffect(() => {
     if (link) QRCode.toString(link, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }).then(setSvg).catch(() => setSvg(''));
   }, [link]);
@@ -472,7 +532,7 @@ const InviteModal: ModalComp = () => {
         <Share2 size={18} />
         <span>
           ¿Solo quieres probar desde el móvil? La <strong>versión móvil mínima</strong> únicamente pide y manda datos a casa:{' '}
-          <button className="text-button" onClick={() => navigator.clipboard.writeText(mobileLink(encodeInvite(invite))).then(() => toast('Enlace a la versión móvil copiado')).catch(() => {})}>
+          <button className="text-button" onClick={() => navigator.clipboard.writeText(mobileLink(encodeInvite(invite), invite.server)).then(() => toast('Enlace a la versión móvil copiado')).catch(() => {})}>
             copiar su enlace
           </button>
           .
@@ -726,7 +786,55 @@ const EntryModal: ModalComp = () => {
   );
 };
 
+const ProfileAddModal: ModalComp = () => {
+  const { profiles } = useHome();
+  return (
+    <>
+      <h2>Añadir otro hogar</h2>
+      <p>Por ejemplo, el piso siguiente o la casa de tu familia, con su propio ordenador. El hogar actual se queda guardado y podrás volver a él desde aquí.</p>
+      <p className="muted">En el siguiente paso eliges crear uno nuevo o unirte con un enlace de invitación.</p>
+      <button
+        className="button primary full"
+        onClick={() => {
+          profiles.add();
+          location.hash = '';
+          location.reload();
+        }}
+      >
+        Continuar
+      </button>
+    </>
+  );
+};
+
+const ProfileRemoveModal: ModalComp = ({ data }) => {
+  const { profiles, close, toast } = useHome();
+  const p = profiles.summary(data.id);
+  return (
+    <>
+      <h2>¿Quitar «{p.name}» de este dispositivo?</h2>
+      <p>
+        {p.server
+          ? 'Sus datos siguen en su ordenador: podrás volver a unirte con un enlace de invitación. Los cambios sin enviar se perderán.'
+          : 'Este hogar solo está aquí: se borrará. Descarga antes una copia si quieres conservarlo.'}
+      </p>
+      <button
+        className="button danger-button full"
+        onClick={() => {
+          profiles.remove(p.id);
+          close();
+          toast('Hogar quitado de este dispositivo');
+        }}
+      >
+        Quitar
+      </button>
+    </>
+  );
+};
+
 export const homeModals: Record<string, ModalComp> = {
+  'profile-add': ProfileAddModal,
+  'profile-remove': ProfileRemoveModal,
   'switch-member': SwitchMember,
   member: MemberModal,
   pet: PetModal,

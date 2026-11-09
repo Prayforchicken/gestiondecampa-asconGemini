@@ -1,6 +1,7 @@
 // Contexto de React: da a cada pantalla acceso al hogar, a «quién soy» y a las acciones comunes.
 import { createContext, useContext } from 'react';
 import type { HouseholdStore, Snapshot } from './store';
+import type { Profiles } from './profiles';
 import type { OpBody } from '../domain/ops';
 import { COMMON, type Member, type MemberId, type State } from '../domain/types';
 
@@ -10,6 +11,8 @@ export type ModalState = { kind: string; data?: any } | null;
 
 export type HomeCtx = {
   store: HouseholdStore;
+  /** Hogares guardados en este dispositivo (cada uno con su servidor). */
+  profiles: Profiles;
   snap: Snapshot;
   state: State;
   me: Member;

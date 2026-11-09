@@ -1,0 +1,79 @@
+apply plugin: 'com.android.application'
+
+// Versión: se toma de package.json («0.3.0» → versionCode 300). Para publicar una
+// actualización, sube la versión en package.json: Android solo instala versiones mayores.
+def pkg = new groovy.json.JsonSlurper().parse(file('../../package.json'))
+def (vMajor, vMinor, vPatch) = pkg.version.tokenize('.').collect { it.replaceAll(/\D.*/, '') as int }
+
+// Firma: con la misma clave siempre, para que cada APK nueva se instale ENCIMA de la
+// anterior sin borrar datos. La clave NO va en el repositorio (es público): se lee de
+// android/keystore.properties o de variables de entorno (para compilar en GitHub).
+def signing = new Properties()
+def signingFile = rootProject.file('keystore.properties')
+if (signingFile.exists()) signingFile.withInputStream { signing.load(it) }
+def signingValue = { String key, String env -> signing.getProperty(key) ?: System.getenv(env) }
+def storePath = signingValue('storeFile', 'COMEMOS_KEYSTORE_FILE')
+
+android {
+    namespace "io.github.prayforchicken.comemos"
+    compileSdk rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "io.github.prayforchicken.comemos"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode vMajor * 10000 + vMinor * 100 + vPatch
+        versionName pkg.version
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        if (storePath) {
+            release {
+                storeFile rootProject.file(storePath)
+                storePassword signingValue('storePassword', 'COMEMOS_KEYSTORE_PASSWORD')
+                keyAlias signingValue('keyAlias', 'COMEMOS_KEY_ALIAS')
+                keyPassword signingValue('keyPassword', 'COMEMOS_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (storePath) signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

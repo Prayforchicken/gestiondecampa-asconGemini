@@ -240,3 +240,10 @@
   .type-group header { padding: 12px 14px; }
   .toolbar .segmented button { padding: 8px 12px; }
 }
+
+/* ---------- Hogares del dispositivo ---------- */
+.homes-card { margin-bottom: 22px; }
+.homes-card .section-title { flex-wrap: wrap; }
+.member-row.current strong { color: var(--green); }
+.member-row .button.compact { min-height: 32px; padding: 6px 12px; }
+.other-homes { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 6px; }

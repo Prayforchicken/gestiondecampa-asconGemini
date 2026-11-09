@@ -9,7 +9,7 @@
 import { StrictMode, useEffect, useState, useSyncExternalStore, type FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArrowUpRight, Check, CloudOff, Cloud, Download, RefreshCw, Send, ShoppingBasket, Wallet, Zap } from 'lucide-react';
-import { HouseholdStore, browserKV, decodeInvite, type KV, type Snapshot } from '../app/store';
+import { HouseholdStore, browserKV, decodeInvite, prefixedKV, type Snapshot } from '../app/store';
 import type { OpBody } from '../domain/ops';
 import { COMMON } from '../domain/types';
 import { day, fromNow, relative } from '../domain/dates';
@@ -21,12 +21,8 @@ import '../styles/base.css';
 import '../styles/app.css';
 import './movil.css';
 
-/** Guarda con un prefijo propio: los datos de esta app no pisan los de la app completa. */
-function prefixed(kv: KV, prefix: string): KV {
-  return { get: (k) => kv.get(prefix + k), set: (k, v) => kv.set(prefix + k, v), remove: (k) => kv.remove(prefix + k) };
-}
-
-const store = new HouseholdStore(prefixed(browserKV(), 'comemos-movil:'));
+// Guarda con un prefijo propio: los datos de esta app no pisan los de la app completa.
+const store = new HouseholdStore(prefixedKV(browserKV(), 'comemos-movil:'));
 
 function readInvite() {
   const m = location.hash.match(/#unirse=(.+)$/);

@@ -1,6 +1,6 @@
 {
   "name": "comemos",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Nuestro hogar: cocina, inventario, compra, gastos compartidos, kits de emergencia y campañas, en una sola app.",
@@ -10,9 +10,13 @@
     "start": "node server/index.mjs",
     "serve": "npm run build && npm start",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts"
+    "test": "node --import tsx --test tests/*.test.ts",
+    "android:sync": "npm run build && cap sync android",
+    "android:apk": "node scripts/android-apk.mjs"
   },
   "dependencies": {
+    "@capacitor/android": "^7.6.10",
+    "@capacitor/core": "^7.6.10",
     "lucide-react": "^0.468.0",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
@@ -20,6 +24,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.6.10",
     "@types/node": "^22.0.0",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.0.0",

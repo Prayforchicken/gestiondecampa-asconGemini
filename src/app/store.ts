@@ -13,6 +13,7 @@ import { zodMessage } from '../domain/schemas';
 import { applyAndLog, replay } from '../domain/reducer';
 import type { MemberId, State } from '../domain/types';
 import { migrateV1, withLegacyCampaigns } from '../domain/migrate';
+import { normalizeServer } from './native';
 
 export type SyncConfig = { server: string; householdId: string; secret: string };
 export type RejectedNotice = { id: string; label: string; reason: string; at: string };
@@ -258,7 +259,8 @@ export class HouseholdStore {
   }
 
   /** Comprueba que hay un servidor del hogar en esa dirección. */
-  async checkServer(server: string): Promise<{ createNeedsToken: boolean }> {
+  async checkServer(input: string): Promise<{ createNeedsToken: boolean }> {
+    const server = normalizeServer(input);
     let res: Response;
     try {
       res = await this.fetcher(server.replace(/\/+$/, '') + '/api/health');
@@ -271,7 +273,8 @@ export class HouseholdStore {
   }
 
   /** Sube el hogar de este dispositivo a un servidor y devuelve la invitación para los demás. */
-  async connectNew(server: string, createToken = ''): Promise<Invite> {
+  async connectNew(input: string, createToken = ''): Promise<Invite> {
+    const server = normalizeServer(input);
     if (!this.data || !this.view) throw Error('Todavía no hay un hogar creado.');
     if (this.data.sync) throw Error('Este hogar ya está conectado.');
     const genesis = this.view;
@@ -298,7 +301,9 @@ export class HouseholdStore {
     try {
       body = await this.request(cfg, '');
     } catch (e) {
-      if (e instanceof TypeError) throw Error('No se puede conectar con el servidor del hogar.');
+      // Sin código HTTP = no hubo respuesta (en el navegador es un TypeError; en la app
+      // Android, un error de la red nativa).
+      if (!(e as { status?: number }).status) throw Error('No se puede conectar con el servidor del hogar. ¿Está encendido y la dirección es correcta?');
       throw e;
     }
     const { state } = replay(body.genesis, body.ops.map((e) => e.op));
@@ -461,6 +466,11 @@ export function browserKV(): KV {
       }
     },
   };
+}
+
+/** Almacén con prefijo: varios hogares (o apps) en el mismo dispositivo sin mezclarse. */
+export function prefixedKV(kv: KV, prefix: string): KV {
+  return { get: (k) => kv.get(prefix + k), set: (k, v) => kv.set(prefix + k, v), remove: (k) => kv.remove(prefix + k) };
 }
 
 export function memoryKV(initial: Record<string, string> = {}): KV & { data: Record<string, string> } {

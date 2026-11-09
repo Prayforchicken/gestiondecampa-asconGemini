@@ -108,6 +108,36 @@ Los números los asigna la app (no el móvil), así dos personas sin conexión n
 2. Ábrelo en el móvil y pulsa **Conectar**.
 3. Para instalarla como app: menú del navegador → **Instalar app / Añadir a pantalla de inicio**. Android y iPhone solo instalan PWA servidas por **HTTPS** (Tailscale lo da hecho) o desde `localhost`. Por la wifi de casa con `http://IP:8787` funciona en el navegador, pero no se instala como app.
 
+## 5b. App de Android (APK)
+
+La app completa también existe como **APK de Android** (`io.github.prayforchicken.comemos`). La web va dentro de la APK, así que abre sin conexión, y habla por la red con el ordenador de casa.
+
+### Instalarla
+
+1. Pasa `comemos-0.3.0.apk` al móvil (Drive, Telegram, cable...).
+2. Ábrela. Android pedirá permiso para «instalar apps de origen desconocido» desde esa app: acéptalo solo para esto.
+3. Abre **Comemos** y elige: crear un hogar o **«Tengo una invitación»** (pega el enlace que da *Hogar → Invitar* en otro dispositivo).
+
+### Varios ordenadores (hogares)
+
+En **Hogar → Hogares en este dispositivo → Añadir otro hogar u ordenador** puedes tener el piso actual, el siguiente o la casa de tu familia, cada uno con su propio ordenador. Los datos de cada hogar se guardan aparte; cambias con **Abrir** y quitas uno con **×** (sus datos siguen en su ordenador). Esto también funciona en la versión web.
+
+La dirección del ordenador se puede escribir tal cual: `192.168.1.20:8787` (wifi de casa) o `https://mi-pc.tu-red.ts.net` (Tailscale, también fuera de casa). La APK admite servidores `http://` de la red local.
+
+### Compilarla tú (para actualizar)
+
+Necesitas Node.js 22 y el SDK de Android (lo más sencillo: instalar [Android Studio](https://developer.android.com/studio), que lo trae).
+
+```bash
+npm ci
+npm run android:apk          # APK firmada → apk/comemos-<versión>.apk
+npm run android:apk -- debug # APK de pruebas, firmada con la clave de depuración
+```
+
+- **Sube la versión en `package.json`** antes de cada actualización (0.3.0 → 0.3.1): Android solo instala encima una versión mayor.
+- **La clave de firma** (`comemos-release.jks` + `keystore.properties`) va en la carpeta `android/` y **nunca al repositorio** (el `.gitignore` la bloquea). Todas las versiones deben firmarse con la misma clave: si se pierde, habrá que desinstalar la app y volver a unirse al hogar (los datos siguen en el ordenador). Guarda una copia en un sitio seguro.
+- En Windows el script usa `gradlew.bat` automáticamente.
+
 ## 6. Una mano con IA
 
 La app no llama a ninguna IA por su cuenta. Pulsa **Una mano con IA → Copiar contexto**, pégalo en tu chat favorito y pide, por ejemplo, «una receta con lo que caduca esta semana», «apunta este ticket» o «completa la mochila de emergencia para dos personas y un gato». La IA responde un JSON; lo pegas, la app lo **valida**, te enseña cada cambio y solo lo aplica si le das a «Aplicar».
@@ -142,8 +172,11 @@ src/
     App.tsx        Navegación, menú, ventanas
     pages/         Una pantalla por archivo
   movil/         Versión móvil mínima (movil.html)
+  app/profiles.ts  Varios hogares (y ordenadores) en el mismo dispositivo
   styles/        Estilos
 server/index.mjs Servidor del hogar (Node, sin dependencias)
+android/         Proyecto Android (Capacitor). capacitor.config.ts lo configura
+scripts/android-apk.mjs  Compila la APK
 tests/           Pruebas: npm test
 ```
 
@@ -163,6 +196,7 @@ Cada cambio se guarda como una **operación** (por ejemplo, «Rali sirvió 300 g
 | `npm test` | Pruebas del dominio y de la sincronización entre dos «móviles». |
 | `npm run typecheck` | Revisa los tipos de TypeScript. |
 | `npm run build` | Compila la app en `dist/`. |
+| `npm run android:apk` | Compila la APK de Android en `apk/`. |
 
 ## Límites (con honestidad)
 

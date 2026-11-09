@@ -2,14 +2,17 @@
 import { useState } from 'react';
 import { ArrowRight, Leaf, Link2, Minus, Plus, Users } from 'lucide-react';
 import type { HouseholdStore } from '../../app/store';
+import type { Profiles } from '../../app/profiles';
 import { decodeInvite } from '../../app/store';
 import { newHousehold, withDemoContent } from '../../domain/seed';
 import type { State } from '../../domain/types';
 import { uid } from '../../domain/format';
 import { Avatar } from '../common';
 
-export function Onboarding({ store, invite, onDone }: { store: HouseholdStore; invite: string | null; onDone: () => void }) {
+export function Onboarding({ store, profiles, invite, onDone }: { store: HouseholdStore; profiles: Profiles; invite: string | null; onDone: () => void }) {
   const [mode, setMode] = useState<'create' | 'join'>(invite ? 'join' : 'create');
+  // Si este dispositivo ya tiene otros hogares, se puede volver a ellos.
+  const others = profiles.summaries().filter((p) => p.id !== profiles.active && !p.empty);
   return (
     <div className="onboarding">
       <div className="onboarding-card">
@@ -34,6 +37,27 @@ export function Onboarding({ store, invite, onDone }: { store: HouseholdStore; i
           </button>
         </div>
         {mode === 'create' ? <CreateForm store={store} /> : <JoinForm store={store} initial={invite ?? ''} onDone={onDone} />}
+        {others.length > 0 && (
+          <div className="other-homes">
+            <span className="field-label">O vuelve a un hogar de este dispositivo</span>
+            {others.map((p) => (
+              <button
+                key={p.id}
+                className="button secondary full spaced"
+                onClick={() => {
+                  const empty = profiles.active;
+                  profiles.activate(p.id);
+                  profiles.remove(empty);
+                  location.hash = '#/hoy';
+                  location.reload();
+                }}
+              >
+                {p.name}
+                {p.server ? ` · ${p.server.replace(/^https?:\/\//, '')}` : ''}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

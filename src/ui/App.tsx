@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { HomeContext, makeNameOf, type HomeCtx, type ModalState, type Tab } from '../app/context';
 import type { HouseholdStore, Snapshot } from '../app/store';
+import type { Profiles } from '../app/profiles';
 import type { OpBody } from '../domain/ops';
 import { Avatar } from './common';
 import { Onboarding, WhoAreYou } from './pages/Onboarding';
@@ -77,19 +78,19 @@ function readInvite(): string | null {
   return m ? m[1] : null;
 }
 
-export function App({ store }: { store: HouseholdStore }) {
+export function App({ store, profiles }: { store: HouseholdStore; profiles: Profiles }) {
   const snap = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const [invite, setInvite] = useState<string | null>(readInvite);
 
   useEffect(() => store.startAutoSync(), [store]);
 
-  if (!snap.state) return <Onboarding store={store} invite={invite} onDone={() => setInvite(null)} />;
+  if (!snap.state) return <Onboarding store={store} profiles={profiles} invite={invite} onDone={() => setInvite(null)} />;
   const me = snap.state.household.members.find((m) => m.id === snap.me && m.active);
   if (!me) return <WhoAreYou store={store} state={snap.state} />;
-  return <Shell store={store} snap={snap} invite={invite} clearInvite={() => setInvite(null)} />;
+  return <Shell store={store} profiles={profiles} snap={snap} invite={invite} clearInvite={() => setInvite(null)} />;
 }
 
-function Shell({ store, snap, invite, clearInvite }: { store: HouseholdStore; snap: Snapshot; invite: string | null; clearInvite: () => void }) {
+function Shell({ store, profiles, snap, invite, clearInvite }: { store: HouseholdStore; profiles: Profiles; snap: Snapshot; invite: string | null; clearInvite: () => void }) {
   const state = snap.state!;
   const me = state.household.members.find((m) => m.id === snap.me)!;
   const members = state.household.members.filter((m) => m.active);
@@ -168,8 +169,8 @@ function Shell({ store, snap, invite, clearInvite }: { store: HouseholdStore; sn
   );
 
   const ctx: HomeCtx = useMemo(
-    () => ({ store, snap, state, me, members, act, toast: setToastText, open, close, modal, error, setError, go, tab: route.tab, param: route.param, nameOf: makeNameOf(state) }),
-    [store, snap, state, me, members, act, open, close, modal, error, go, route],
+    () => ({ store, profiles, snap, state, me, members, act, toast: setToastText, open, close, modal, error, setError, go, tab: route.tab, param: route.param, nameOf: makeNameOf(state) }),
+    [store, profiles, snap, state, me, members, act, open, close, modal, error, go, route],
   );
 
   const Modal = modal ? MODALS[modal.kind] : null;
