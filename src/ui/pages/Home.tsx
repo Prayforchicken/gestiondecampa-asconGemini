@@ -28,7 +28,7 @@ import {
 import { useHome, type Tab } from '../../app/context';
 import type { ModalComp } from '../App';
 import { decodeInvite, encodeInvite } from '../../app/store';
-import { buildAbacoTree, departmentSummary, parseAbacoRows } from '../../domain/abaco';
+import { DEPARTMENTS, FAMILIES, SECTIONS, TYPES, formatCode, normalize } from '../../domain/estructura';
 import { day } from '../../domain/dates';
 import { uid } from '../../domain/format';
 import { AVATAR_COLORS } from '../../domain/seed';
@@ -153,27 +153,15 @@ export function HomePage() {
         </section>
 
         <section className="card settings-card">
-          <h2>Clasificación de artículos</h2>
+          <h2>Estructura de artículos</h2>
           <p className="muted">
-            {snap.abaco
-              ? `Estructura importada: ${snap.abaco.rayons.length} rayones, ${snap.abaco.rayons.reduce((a, r) => a + r.families.length, 0)} familias. ${snap.sync ? 'Se comparte con el hogar.' : ''}`
-              : 'Ahora usas una lista básica de secciones. Puedes importar vuestra estructura completa (rayón, familia y subfamilia).'}
+            La clasificación propia de comemos: {DEPARTMENTS.length} departamentos, {SECTIONS.length} secciones, {FAMILIES.length} familias y {TYPES.length} tipos. De
+            ella salen los códigos internos: sección · familia · tipo · artículo (p. ej. 11.02.02.001).
           </p>
-          <button className="button secondary full" onClick={() => open('abaco')}>
-            <Tags size={16} /> {snap.abaco ? 'Volver a importar' : 'Importar estructura (SQL, CSV o JSON)'}
+          <button className="button secondary full" onClick={() => open('estructura')}>
+            <Tags size={16} /> Ver la estructura y los códigos
           </button>
-          {snap.abaco && (
-            <button
-              className="text-button danger spaced"
-              onClick={() => {
-                store.setAbaco(null);
-                toast('Estructura quitada de este dispositivo');
-              }}
-            >
-              Quitar de este dispositivo
-            </button>
-          )}
-          <p className="footnote">Se guarda en vuestros dispositivos y en vuestro servidor, nunca en el código público de la app.</p>
+          <p className="footnote">Se edita en src/data/estructura.ts. Inspirada en Ábaco, pensada para una casa: proteínas vegetales, mascotas, botiquín y emergencias.</p>
         </section>
 
         <section className="card settings-card">
@@ -542,78 +530,73 @@ const DisconnectModal: ModalComp = () => {
   );
 };
 
-type Rows = ReturnType<typeof parseAbacoRows>;
-
-const AbacoModal: ModalComp = () => {
-  const { store, setError, close, toast } = useHome();
-  const [rows, setRows] = useState<Rows | null>(null);
-  const [chosen, setChosen] = useState<string[]>(['01', '02']);
-  const [busy, setBusy] = useState(false);
-  const departments = rows ? departmentSummary(rows) : [];
+/** Visor de la estructura: departamentos, secciones, familias y tipos con sus códigos. */
+const EstructuraModal: ModalComp = () => {
+  const { state } = useHome();
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState<number | null>(null);
+  const q = normalize(query);
+  const count = (code: string) => new Set(state.items.filter((i) => i.type === code).map((i) => i.productId ?? i.id)).size;
+  const visible = (name: string, syn: string[], code: string) => !q || normalize(name).includes(q) || syn.some((x) => normalize(x).includes(q)) || code.startsWith(q.replace(/\./g, ''));
   return (
     <>
-      <h2>Importar estructura</h2>
-      <p className="muted">
-        Acepta el export SQL de TablePlus (tabla con cod_rayon, desc_rayon, cod_familia…), un CSV con esas columnas o un JSON. Se procesa en este dispositivo.
-      </p>
-      <label>
-        Archivo
-        <input
-          type="file"
-          accept=".sql,.csv,.json,.txt"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            setBusy(true);
-            try {
-              const parsed = parseAbacoRows(await readFile(file));
-              if (!parsed.length) throw Error('No se han encontrado filas.');
-              setRows(parsed);
-              setError('');
-            } catch (err) {
-              setRows(null);
-              setError(err instanceof Error ? err.message : 'No se pudo leer el archivo.');
-            } finally {
-              setBusy(false);
-            }
-          }}
-        />
-      </label>
-      {busy && <p className="muted">Leyendo…</p>}
-      {rows && (
-        <div className="import-preview">
-          <h3>
-            <Check size={18} /> {rows.length} filas leídas
-          </h3>
-          <p>Elige qué departamentos usar en casa (alimentación y droguería suelen bastar):</p>
-          {departments.map((d) => (
-            <label className="checkbox-label" key={d.code}>
-              <input type="checkbox" checked={chosen.includes(d.code)} onChange={(e) => setChosen(e.target.checked ? [...chosen, d.code] : chosen.filter((c) => c !== d.code))} /> {d.code} ·{' '}
-              {d.name} ({d.rows})
-            </label>
-          ))}
-          <button
-            className="button primary full spaced"
-            disabled={!chosen.length}
-            onClick={() => {
-              try {
-                const tree = buildAbacoTree(rows, chosen);
-                store.setAbaco(tree);
-                close();
-                toast(`Estructura importada: ${tree.rayons.length} rayones`);
-              } catch (err) {
-                setError(err instanceof Error ? err.message : 'No se pudo importar.');
-              }
-            }}
-          >
-            Importar
-          </button>
-        </div>
-      )}
-      <p className="footnote">Los rayones 21 y 24 usan vuestros nombres: proteínas vegetales y alternativas veganas con algas. El 13 sigue siendo congelados.</p>
+      <h2>Estructura de artículos</h2>
+      <p className="muted">Código interno: SS sección · FF familia · TT tipo · AAA artículo. Los artículos del mismo tipo comparten los 6 primeros dígitos.</p>
+      <div className="search-field small">
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar: arroz, pilas, 1102…" aria-label="Buscar en la estructura" />
+      </div>
+      <div className="tree">
+        {DEPARTMENTS.map((d) => (
+          <div key={d.code} className="tree-dept">
+            <h3>
+              {d.code} · {d.name}
+            </h3>
+            {d.sections.map((sec) => {
+              const fams = sec.families
+                .map((f) => ({ f, types: f.types.filter((t) => visible(t.name, t.synonyms, t.code) || visible(f.name, [], f.full) || visible(sec.name, [], String(sec.code))) }))
+                .filter((x) => x.types.length);
+              if (!fams.length) return null;
+              const expanded = Boolean(q) || open === sec.code;
+              return (
+                <div key={sec.code} className="tree-section">
+                  <button type="button" onClick={() => setOpen(open === sec.code ? null : sec.code)} aria-expanded={expanded}>
+                    <span className="code-tag">
+                      <strong>{sec.code}</strong>
+                    </span>{' '}
+                    {sec.name}
+                    <small>
+                      {sec.families.length} familias · {sec.place}
+                    </small>
+                    <ChevronRight size={14} className={expanded ? 'rot' : ''} />
+                  </button>
+                  {expanded &&
+                    fams.map(({ f, types }) => (
+                      <div key={f.full} className="tree-family">
+                        <strong>
+                          <span className="code-tag">{formatCode(f.full)}</span> {f.name}
+                        </strong>
+                        {types.map((t) => (
+                          <p key={t.code}>
+                            <span className="code-tag">
+                              <strong>{formatCode(t.code)}</strong>
+                            </span>{' '}
+                            {t.name}
+                            {t.protein !== null && <small> · {t.protein} g prot.</small>}
+                            {count(t.code) > 0 && <span className="pill green">{count(t.code)} en casa</span>}
+                          </p>
+                        ))}
+                      </div>
+                    ))}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </>
   );
 };
+EstructuraModal.wide = true;
 
 const RestoreModal: ModalComp = () => {
   const { store, setError, close, toast, snap } = useHome();
@@ -738,7 +721,7 @@ export const homeModals: Record<string, ModalComp> = {
   invite: InviteModal,
   join: JoinModal,
   disconnect: DisconnectModal,
-  abaco: AbacoModal,
+  estructura: EstructuraModal,
   restore: RestoreModal,
   reset: ResetModal,
   entry: EntryModal,

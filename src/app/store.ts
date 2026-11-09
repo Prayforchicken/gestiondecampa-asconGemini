@@ -8,7 +8,6 @@
 //   state      = confirmed + pending  (lo que ves en pantalla)
 //
 // Este archivo no depende de React: se puede probar con Node.
-import type { AbacoTree } from '../domain/abaco';
 import { opSchema, type Op, type OpBody } from '../domain/ops';
 import { zodMessage } from '../domain/schemas';
 import { applyAndLog, replay } from '../domain/reducer';
@@ -39,7 +38,6 @@ export type Snapshot = {
   lastError: string;
   sync: SyncConfig | null;
   rejected: RejectedNotice[];
-  abaco: AbacoTree | null;
 };
 
 export interface KV {
@@ -48,7 +46,9 @@ export interface KV {
   remove(key: string): void;
 }
 
-export const KEYS = { data: 'comemos-v2', device: 'comemos-device', abaco: 'comemos-abaco', legacy: 'comemos-demo-v1', legacyCampaigns: 'campaigns' };
+export const KEYS = { data: 'comemos-v2', device: 'comemos-device', legacy: 'comemos-demo-v1', legacyCampaigns: 'campaigns' };
+/** Clave de la antigua estructura importada (ya no se usa: se borra al arrancar). */
+const OLD_ABACO_KEY = 'comemos-abaco';
 
 /** Datos de invitación que se comparten por enlace o QR. */
 export type Invite = { server: string; householdId: string; secret: string; name: string };
@@ -75,7 +75,6 @@ const SYNC_INTERVAL = 15_000;
 export class HouseholdStore {
   private data: Persisted | null = null;
   private device: { id: string; me: MemberId | null };
-  private abaco: AbacoTree | null = null;
   private view: State | null = null;
   private status: SyncStatus = 'local';
   private lastError = '';
@@ -92,7 +91,7 @@ export class HouseholdStore {
   ) {
     this.device = this.loadDevice();
     this.data = this.loadData();
-    this.abaco = this.loadAbaco();
+    this.kv.remove(OLD_ABACO_KEY);
     this.status = this.data?.sync ? 'idle' : 'local';
     this.recompute();
   }
@@ -117,7 +116,6 @@ export class HouseholdStore {
       lastError: this.lastError,
       sync: this.data?.sync ?? null,
       rejected: this.data?.rejected ?? [],
-      abaco: this.abaco,
     };
     for (const fn of this.listeners) fn();
   }
@@ -159,15 +157,6 @@ export class HouseholdStore {
       console.error('No se pudieron leer los datos guardados', e);
     }
     return null;
-  }
-
-  private loadAbaco(): AbacoTree | null {
-    try {
-      const t = JSON.parse(this.kv.get(KEYS.abaco) ?? 'null');
-      return t && t.version === 1 && Array.isArray(t.rayons) ? t : null;
-    } catch {
-      return null;
-    }
   }
 
   private persist() {
@@ -252,34 +241,6 @@ export class HouseholdStore {
     this.emit();
   }
 
-  // ---------- Estructura de clasificación ----------
-
-  setAbaco(tree: AbacoTree | null) {
-    this.abaco = tree;
-    if (tree) this.kv.set(KEYS.abaco, JSON.stringify(tree));
-    else this.kv.remove(KEYS.abaco);
-    this.emit();
-    if (tree && this.data?.sync) void this.pushAbaco().catch(() => {});
-  }
-
-  private async pushAbaco() {
-    const cfg = this.data?.sync;
-    if (!cfg || !this.abaco) return;
-    await this.request(cfg, `/abaco`, { method: 'PUT', body: JSON.stringify(this.abaco) });
-  }
-
-  private async syncAbaco(remoteVersion: string | null) {
-    const local = this.abaco?.importedAt ?? null;
-    if (remoteVersion === local) return;
-    if (local && (!remoteVersion || local > remoteVersion)) return this.pushAbaco();
-    const cfg = this.data!.sync!;
-    const tree = (await this.request(cfg, '/abaco')) as AbacoTree;
-    if (tree?.version === 1) {
-      this.abaco = tree;
-      this.kv.set(KEYS.abaco, JSON.stringify(tree));
-    }
-  }
-
   // ---------- Servidor ----------
 
   private base(cfg: { server: string }) {
@@ -327,14 +288,13 @@ export class HouseholdStore {
     this.status = 'idle';
     this.persist();
     this.recompute();
-    if (this.abaco) await this.pushAbaco().catch(() => {});
     return this.invite()!;
   }
 
   /** Se une a un hogar existente. Sustituye los datos de este dispositivo. */
   async join(invite: Invite) {
     const cfg: SyncConfig = { server: invite.server, householdId: invite.householdId, secret: invite.secret };
-    let body: { genesis: State; ops: { seq: number; op: Op }[]; seq: number; abacoVersion: string | null };
+    let body: { genesis: State; ops: { seq: number; op: Op }[]; seq: number };
     try {
       body = await this.request(cfg, '');
     } catch (e) {
@@ -347,7 +307,6 @@ export class HouseholdStore {
     this.kv.set(KEYS.device, JSON.stringify(this.device));
     this.status = 'idle';
     this.persist();
-    await this.syncAbaco(body.abacoVersion).catch(() => {});
     this.recompute();
   }
 
@@ -396,7 +355,6 @@ export class HouseholdStore {
       const body = (await this.request(cfg, '/sync', { method: 'POST', body: JSON.stringify({ since: data.seq, ops: sending }) })) as {
         seq: number;
         ops: { seq: number; op: Op }[];
-        abacoVersion: string | null;
       };
       if (this.data !== data || data.sync !== cfg) return; // el usuario cambió de hogar mientras tanto
       const fresh = body.ops.filter((e) => e.seq > data.seq).map((e) => e.op);
@@ -414,7 +372,6 @@ export class HouseholdStore {
       this.status = 'idle';
       this.lastError = '';
       this.persist();
-      await this.syncAbaco(body.abacoVersion).catch(() => {});
       this.recompute();
       if (data.pending.length) this.scheduleSync(200);
     } catch (e) {

@@ -3,24 +3,23 @@ import { useState } from 'react';
 import { ArrowUpRight, Check, ChevronRight, Info, Plus, ShoppingBasket, Sparkles, Trash2, X } from 'lucide-react';
 import { useHome } from '../../app/context';
 import type { ModalComp } from '../App';
-import { rayonName, searchAbaco, normalize } from '../../domain/abaco';
+import { guessType, normalize, sectionName } from '../../domain/estructura';
 import { uid } from '../../domain/format';
 import type { Shopping, State } from '../../domain/types';
-import type { AbacoTree } from '../../domain/abaco';
-import { Avatar, ClassPicker, IconBadge, OwnerSelect, PageHeading, str, type Classification } from '../common';
+import { Avatar, IconBadge, OwnerSelect, PageHeading, SectionSelect, str } from '../common';
 
-/** Adivina la sección de un artículo: primero por el inventario, luego por la clasificación. */
-export function guessSection(state: State, tree: AbacoTree | null, name: string): number | undefined {
+/** Adivina la sección de un artículo: primero por el inventario, luego por la estructura. */
+export function guessSection(state: State, name: string): number | undefined {
   const n = normalize(name);
   if (!n) return undefined;
   const known = state.items.find((i) => normalize(i.name) === n) ?? state.items.find((i) => normalize(i.name).includes(n) || n.includes(normalize(i.name)));
   if (known) return known.section;
-  const word = n.split(' ').find((w) => w.length > 3) ?? n;
-  return searchAbaco(tree, word, 1)[0]?.rayon;
+  const t = guessType(name);
+  return t ? Number(t.code.slice(0, 2)) : undefined;
 }
 
 export function ShoppingPage() {
-  const { state, act, open, snap, nameOf, members, go } = useHome();
+  const { state, act, open, nameOf, members, go } = useHome();
   const pending = state.shopping.filter((s) => !s.checked);
   const checked = state.shopping.filter((s) => s.checked);
   // Agrupar por sección: así la lista sigue el recorrido de la tienda.
@@ -55,7 +54,7 @@ export function ShoppingPage() {
           </div>
           {ordered.map(([section, list]) => (
             <div className="shop-group" key={section}>
-              <h3>{section === 9999 ? 'Sin sección' : rayonName(snap.abaco, section)}</h3>
+              <h3>{section === 9999 ? 'Sin sección' : `${section} · ${sectionName(section)}`}</h3>
               {list.map((s) => (
                 <div className={'shopping-row ' + (s.checked ? 'checked' : '')} key={s.id}>
                   <button
@@ -125,9 +124,9 @@ export function ShoppingPage() {
 }
 
 const ShoppingModal: ModalComp = ({ data }) => {
-  const { state, act, snap } = useHome();
+  const { state, act } = useHome();
   const s = state.shopping.find((x) => x.id === data?.shoppingId);
-  const [cls, setCls] = useState<Classification | null>(s?.section !== undefined ? { section: s.section } : null);
+  const [section, setSection] = useState<number | null>(s?.section ?? null);
   return (
     <>
       <h2>{s ? 'Editar' : 'Para la próxima compra'}</h2>
@@ -136,10 +135,10 @@ const ShoppingModal: ModalComp = ({ data }) => {
           e.preventDefault();
           const f = new FormData(e.currentTarget);
           const name = str(f, 'name');
-          const section = cls?.section ?? guessSection(state, snap.abaco, name);
+          const chosen = section ?? guessSection(state, name);
           const owner = str(f, 'owner');
           const entity: Shopping = { id: s?.id ?? uid(), name, quantity: str(f, 'quantity'), checked: s?.checked ?? false };
-          if (section !== undefined) entity.section = section;
+          if (chosen !== undefined) entity.section = chosen;
           if (owner) entity.owner = owner;
           act({ type: 'upsert', collection: 'shopping', entity }, s ? 'Guardado' : 'Añadido a la lista', true);
         }}
@@ -158,10 +157,13 @@ const ShoppingModal: ModalComp = ({ data }) => {
             <OwnerSelect name="owner" defaultValue={s?.owner} />
           </label>
         </div>
-        {cls ? (
-          <ClassPicker value={cls} onChange={setCls} />
+        {section !== null ? (
+          <label>
+            Sección
+            <SectionSelect value={section} onChange={setSection} />
+          </label>
         ) : (
-          <button type="button" className="text-button" onClick={() => setCls({ section: 11 })}>
+          <button type="button" className="text-button" onClick={() => setSection(11)}>
             Elegir sección (si no, la adivinamos por el nombre)
           </button>
         )}

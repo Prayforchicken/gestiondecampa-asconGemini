@@ -9,6 +9,8 @@ import type { Op } from './ops';
 import { opSchema } from './ops';
 import { COMMON, type Item, type Kit, type State } from './types';
 import { euros } from './format';
+import { findType, nextArticle } from './estructura';
+import { ingredientExists, ingredientName, lotsFor, productOf, stockFor } from './stock';
 
 const LOG_LIMIT = 300;
 const KIT_HISTORY_LIMIT = 60;
@@ -72,16 +74,57 @@ function findKit(s: State, kitId: string): Kit {
   return kit;
 }
 
-const productOf = (i: Item) => i.productId ?? i.id;
+const lotsOf = lotsFor;
+const available = stockFor;
 
-/** Lotes de un producto, primero los que caducan antes (los que no tienen fecha, al final). */
-function lotsOf(s: State, productId: string): Item[] {
-  return s.items
-    .filter((x) => productOf(x) === productId)
-    .sort((a, b) => (a.expires || '9999').localeCompare(b.expires || '9999'));
+/**
+ * Prepara un lote antes de guardarlo: código interno y EAN.
+ *  - Un lote de un artículo existente hereda su tipo, número de artículo y EAN.
+ *  - Un artículo nuevo (o reclasificado) recibe el siguiente número libre de su tipo.
+ *    Se calcula aquí, en el reducer, para que dos móviles sin conexión nunca den el mismo
+ *    número a artículos distintos: todos aplican las operaciones en el mismo orden.
+ *  - Un EAN pertenece a un solo artículo.
+ */
+function prepareItem(s: State, input: Item, previous?: Item): Item {
+  const e: Item = { ...input };
+  const product = productOf(e);
+  if (product !== e.id) {
+    const root = s.items.find((i) => i.id === product) ?? s.items.find((i) => productOf(i) === product && i.id !== e.id);
+    if (root) {
+      e.type = root.type;
+      e.article = root.article;
+      if (root.ean) e.ean = root.ean;
+      if (!e.type) delete e.type;
+      if (!e.article) delete e.article;
+    }
+  }
+  if (e.type) {
+    if (!findType(e.type)) throw Error('Tipo de artículo desconocido: ' + e.type);
+    e.section = Number(e.type.slice(0, 2));
+    if (previous && previous.type !== e.type && product === e.id) delete e.article;
+    const taken = s.items.some((i) => i.type === e.type && i.article === e.article && productOf(i) !== product);
+    if (!e.article || taken) e.article = nextArticle(s.items, e.type, product);
+  } else delete e.article;
+  if (e.ean) {
+    const other = s.items.find((i) => i.ean === e.ean && productOf(i) !== product);
+    if (other) throw Error(`Ese EAN ya es de «${other.name}». Añádelo como un lote nuevo de ese artículo.`);
+  }
+  return e;
 }
 
-const available = (s: State, productId: string) => lotsOf(s, productId).reduce((a, x) => a + x.qty, 0);
+/** Si se cambia el código de un artículo, sus otros lotes lo siguen. */
+function propagateCode(s: State, root: Item) {
+  if (productOf(root) !== root.id) return;
+  for (const lot of s.items) {
+    if (lot.productId !== root.id || lot.id === root.id) continue;
+    lot.section = root.section;
+    if (root.type) lot.type = root.type;
+    else delete lot.type;
+    if (root.article) lot.article = root.article;
+    else delete lot.article;
+    if (root.ean) lot.ean = root.ean;
+  }
+}
 
 /** Aplica la operación sobre `s` (lo modifica) y devuelve una etiqueta para el historial. */
 export function applyOp(s: State, op: Op): string {
@@ -92,12 +135,14 @@ export function applyOp(s: State, op: Op): string {
     }
 
     case 'upsert': {
-      const entity = collectionSchemas[op.collection].parse(op.entity) as unknown as Record<string, unknown> & Entity;
+      let entity = collectionSchemas[op.collection].parse(op.entity) as unknown as Record<string, unknown> & Entity;
       checkReferences(s, op.collection, entity);
       const list = listOf(s, op.collection);
       const index = list.findIndex((x) => x.id === entity.id);
+      if (op.collection === 'items') entity = prepareItem(s, entity as unknown as Item, list[index] as Item | undefined) as unknown as typeof entity;
       if (index >= 0) list[index] = entity;
       else list.push(entity);
+      if (op.collection === 'items') propagateCode(s, entity as unknown as Item);
       return `${COLLECTION_NAMES[op.collection]} ${index >= 0 ? 'actualizado' : 'añadido'}: ${entityName(entity)}`;
     }
 
@@ -105,9 +150,11 @@ export function applyOp(s: State, op: Op): string {
       const list = listOf(s, op.collection);
       const index = list.findIndex((x) => x.id === op.entityId);
       if (index < 0) throw Error('Ese elemento ya no existe.');
-      const merged = collectionSchemas[op.collection].parse({ ...list[index], ...op.fields, id: op.entityId }) as unknown as Record<string, unknown> & Entity;
+      let merged = collectionSchemas[op.collection].parse({ ...list[index], ...op.fields, id: op.entityId }) as unknown as Record<string, unknown> & Entity;
       checkReferences(s, op.collection, merged);
+      if (op.collection === 'items') merged = prepareItem(s, merged as unknown as Item, list[index] as Item) as unknown as typeof merged;
       list[index] = merged;
+      if (op.collection === 'items') propagateCode(s, merged as unknown as Item);
       return `${COLLECTION_NAMES[op.collection]} actualizado: ${entityName(merged)}`;
     }
 
@@ -150,10 +197,7 @@ export function applyOp(s: State, op: Op): string {
         needed.set(g.itemId, (needed.get(g.itemId) ?? 0) + q);
       });
       for (const [productId, q] of needed) {
-        if (q > 0 && available(s, productId) + 1e-9 < q) {
-          const name = s.items.find((i) => productOf(i) === productId)?.name ?? productId;
-          throw Error('No queda suficiente ' + name + '.');
-        }
+        if (q > 0 && available(s, productId) + 1e-9 < q) throw Error('No queda suficiente ' + ingredientName(s, productId) + '.');
       }
       const meal = op.mealId ? s.meals.find((m) => m.id === op.mealId) : undefined;
       if (meal?.done) throw Error('Esta comida ya está registrada.');
@@ -224,7 +268,7 @@ export function applyOp(s: State, op: Op): string {
       p.actions.forEach((a, k) => {
         const id = op.ids[k];
         if (a.type === 'create_recipe') {
-          if (a.recipe.ingredients.some((g) => !d.items.some((i) => productOf(i) === g.itemId)))
+          if (a.recipe.ingredients.some((g) => !ingredientExists(d, g.itemId)))
             throw Error('La receta «' + a.recipe.name + '» contiene un artículo desconocido.');
           d.recipes.push({ ...a.recipe, id, emoji: '🥗' });
         } else if (a.type === 'add_shopping') {

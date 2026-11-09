@@ -23,12 +23,12 @@ import { useHome } from '../../app/context';
 import type { ModalComp } from '../App';
 import { day, fmtDate, relative } from '../../domain/dates';
 import { qty, uid } from '../../domain/format';
-import { FROZEN_SECTION } from '../../domain/abaco';
+import { FROZEN_SECTION, formatCode } from '../../domain/estructura';
+import { ingredientName, ingredientUnit, isTypeKey, lotsFor, stockFor, typeKey } from '../../domain/stock';
 import type { Meal, Recipe, State, Tupper } from '../../domain/types';
 import { AvatarStack, Empty, IconBadge, MemberPicker, PageHeading, num, str, togetherLabel, Avatar } from '../common';
 
-const productOf = (i: { id: string; productId?: string }) => i.productId ?? i.id;
-export const stockOf = (s: State, productId: string) => s.items.filter((x) => productOf(x) === productId).reduce((a, x) => a + x.qty, 0);
+export const stockOf = stockFor;
 export const canCook = (s: State, r: Recipe) => r.ingredients.every((g) => g.optional || stockOf(s, g.itemId) >= g.amount);
 export const tuppersInStock = (s: State) => s.tuppers.filter((t) => t.grams > 0).sort((a, b) => a.review.localeCompare(b.review));
 export const nextMeals = (s: State) => s.meals.filter((m) => !m.done).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
@@ -54,7 +54,7 @@ export function MealCard({ meal: m, index }: { meal: Meal; index: number }) {
   const mealAction = useMealAction();
   const r = state.recipes.find((r) => r.id === m.recipeId);
   const t = state.tuppers.find((t) => t.id === m.tupperId);
-  const frozen = !!r?.ingredients.some((g) => state.items.find((i) => productOf(i) === g.itemId)?.section === FROZEN_SECTION) || t?.place === 'Congelador';
+  const frozen = !!r?.ingredients.some((g) => lotsFor(state, g.itemId).some((i) => i.section === FROZEN_SECTION)) || t?.place === 'Congelador';
   const diners = m.diners?.length ? members.filter((x) => m.diners!.includes(x.id)) : members;
   return (
     <article className={'meal-card ' + (index === 0 ? 'warm' : 'mint')}>
@@ -305,24 +305,26 @@ const RecipeModal: ModalComp = ({ data }) => {
         <h3>Ingredientes</h3>
         <div className="ingredient-list">
           {r.ingredients.map((g, k) => {
-            const i = state.items.find((i) => productOf(i) === g.itemId);
+            const name = ingredientName(state, g.itemId);
+            const unit = ingredientUnit(state, g.itemId);
             return (
               <label className="ingredient" key={g.itemId + k}>
                 <span>
-                  <strong>{i?.name ?? g.itemId}</strong>
+                  <strong>{name}</strong>
                   <small>
-                    {g.optional ? 'Opcional · ' : ''}Disponible: {qty(stockOf(state, g.itemId))} {i?.unit}
+                    {g.optional ? 'Opcional · ' : ''}Disponible: {qty(stockOf(state, g.itemId))} {unit}
+                    {isTypeKey(g.itemId) ? ' · de cualquier marca, primero lo que caduca antes' : ''}
                   </small>
                 </span>
                 <input
-                  aria-label={'Cantidad de ' + (i?.name ?? g.itemId)}
+                  aria-label={'Cantidad de ' + name}
                   type="number"
                   min={0}
                   step="0.1"
                   value={amounts[k] ?? 0}
                   onChange={(e) => setAmounts((a) => a.map((v, j) => (j === k ? Number(e.target.value) : v)))}
                 />
-                <span>{i?.unit}</span>
+                <span>{unit}</span>
               </label>
             );
           })}
@@ -626,6 +628,8 @@ const RecipeEditModal: ModalComp = ({ data }) => {
   const { state, act, open } = useHome();
   const r = state.recipes.find((x) => x.id === data?.recipeId);
   const products = state.items.filter((i) => !i.productId);
+  // Tipos con existencias: «cualquier arroz integral», de la marca que haya.
+  const types = [...new Set(state.items.filter((i) => i.type).map((i) => i.type!))].sort();
   const [rows, setRows] = useState(() => r?.ingredients.map((g) => ({ ...g })) ?? [{ itemId: products[0]?.id ?? '', amount: 100, optional: false }]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   return (
@@ -680,11 +684,22 @@ const RecipeEditModal: ModalComp = ({ data }) => {
             <label>
               Artículo
               <select value={g.itemId} onChange={(e) => setRows(rows.map((x, j) => (j === k ? { ...x, itemId: e.target.value } : x)))}>
-                {products.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.emoji} {i.name} ({i.unit})
-                  </option>
-                ))}
+                {types.length > 0 && (
+                  <optgroup label="Cualquier marca (por tipo)">
+                    {types.map((t) => (
+                      <option key={t} value={typeKey(t)}>
+                        {ingredientName(state, typeKey(t))}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <optgroup label="Un artículo concreto">
+                  {products.map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.emoji} {i.name} ({i.unit}){i.type ? ` · ${formatCode(i.type)}.${i.article}` : ''}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </label>
             <label>

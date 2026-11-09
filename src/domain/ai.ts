@@ -86,7 +86,7 @@ create_recipe: {type:'create_recipe',recipe:{name,description,minutes,servings,i
 add_shopping: {type:'add_shopping',name,quantity}
 record_purchase: {type:'record_purchase',itemId,quantity,total,provider,payer:'${COMMON}'|id de miembro,expires:'AAAA-MM-DD' o ''}
 add_kit_item: {type:'add_kit_item',kitId,name,qty,unit,expires:'AAAA-MM-DD' o '',task:'Cambiar pilas' o '',everyMonths:número}
-Usa las unidades y los itemId del contexto. Las compras crean un lote nuevo y un gasto repartido entre todos los miembros activos. Prioriza tuppers y lotes próximos a caducar. Sección 13: congelados, avisar 12 horas antes. No generes código ejecutable.${includeNutrition ? ' Los valores nutricionales son orientativos.' : ''}
+Usa las unidades y los itemId del contexto. Cada artículo tiene type (6 dígitos: sección, familia y tipo) y article: los del mismo type son el mismo producto de marcas o formatos distintos. En las recetas puedes pedir cualquier artículo de un tipo con itemId:'tipo:<type>' (ej. 'tipo:110202' = cualquier arroz integral). Las compras crean un lote nuevo y un gasto repartido entre todos los miembros activos. Prioriza tuppers y lotes próximos a caducar. Sección 13: congelados, avisar 12 horas antes. No generes código ejecutable.${includeNutrition ? ' Los valores nutricionales son orientativos.' : ''}
 CONTEXTO:
 ${JSON.stringify(context, null, 2)}`;
 }

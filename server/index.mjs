@@ -22,7 +22,6 @@ const DATA_DIR = resolve(process.env.DATA_DIR || join(ROOT, 'data'));
 const DIST = resolve(process.env.DIST_DIR || join(ROOT, 'dist'));
 const CREATE_TOKEN = process.env.CREATE_TOKEN || '';
 const MAX_BODY = 1_500_000; // operaciones y foto inicial
-const MAX_ABACO = 6_000_000; // estructura de clasificación
 const MAX_OPS_PER_SYNC = 500;
 
 mkdirSync(DATA_DIR, { recursive: true });
@@ -31,7 +30,6 @@ mkdirSync(DATA_DIR, { recursive: true });
 // data/<id>/meta.json     nombre, hash de la clave, fecha
 // data/<id>/genesis.json  estado inicial
 // data/<id>/ops.jsonl     una operación por línea (solo se añade, nunca se reescribe)
-// data/<id>/abaco.json    estructura de clasificación compartida (opcional)
 
 /** @type {Map<string, {meta: any, ops: {seq:number, op:any}[], ids: Set<string>}>} */
 const cache = new Map();
@@ -84,7 +82,7 @@ function checkAuth(req, h) {
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Create-Token',
   'Access-Control-Max-Age': '86400',
 };
@@ -155,13 +153,11 @@ async function api(req, res, url) {
   if (!h) return fail(res, 404, 'Hogar no encontrado.');
   if (!checkAuth(req, h)) return fail(res, 401, 'Clave del hogar incorrecta.');
   const action = parts[3] || '';
-  const abacoFile = join(dirOf(id), 'abaco.json');
-  const abacoVersion = () => h.meta.abacoVersion || null;
 
   // Descargar todo (al unirse desde un móvil nuevo)
   if (action === '' && req.method === 'GET') {
     const genesis = JSON.parse(readFileSync(join(dirOf(id), 'genesis.json'), 'utf8'));
-    return send(res, 200, { name: h.meta.name, genesis, ops: h.ops, seq: h.ops.length, abacoVersion: abacoVersion() });
+    return send(res, 200, { name: h.meta.name, genesis, ops: h.ops, seq: h.ops.length});
   }
 
   // Sincronizar: recibe operaciones nuevas y devuelve todas las posteriores a `since`
@@ -180,21 +176,7 @@ async function api(req, res, url) {
       lines.push(JSON.stringify(entry));
     }
     if (lines.length) appendFileSync(join(dirOf(id), 'ops.jsonl'), lines.join('\n') + '\n');
-    return send(res, 200, { seq: h.ops.length, ops: h.ops.slice(since), abacoVersion: abacoVersion() });
-  }
-
-  // Estructura de clasificación compartida
-  if (action === 'abaco' && req.method === 'GET') {
-    if (!existsSync(abacoFile)) return fail(res, 404, 'Este hogar no tiene estructura importada.');
-    return send(res, 200, readFileSync(abacoFile), { 'Content-Type': 'application/json; charset=utf-8' });
-  }
-  if (action === 'abaco' && req.method === 'PUT') {
-    const tree = await readBody(req, MAX_ABACO);
-    if (!tree || tree.version !== 1 || !Array.isArray(tree.rayons) || typeof tree.importedAt !== 'string') return fail(res, 400, 'Estructura no válida.');
-    writeAtomic(abacoFile, JSON.stringify(tree));
-    h.meta.abacoVersion = tree.importedAt;
-    writeAtomic(join(dirOf(id), 'meta.json'), JSON.stringify(h.meta));
-    return send(res, 200, { abacoVersion: tree.importedAt });
+    return send(res, 200, { seq: h.ops.length, ops: h.ops.slice(since)});
   }
 
   return fail(res, 404, 'Ruta desconocida.');

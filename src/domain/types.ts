@@ -35,11 +35,14 @@ export type Item = {
   name: string;
   qty: number;
   unit: Unit;
-  /** Rayón de la clasificación (11 alimentación seca, 13 congelados...). */
+  /** Sección de la estructura (11 alimentación seca, 13 congelados...). */
   section: number;
-  /** Códigos opcionales de familia y subfamilia de la estructura importada. */
-  family?: string;
-  subfamily?: string;
+  /** Tipo de la estructura, 6 dígitos (sección + familia + tipo). Ej.: 110202 = arroz integral. */
+  type?: string;
+  /** Número de artículo dentro del tipo (001, 002...). Lo asigna la app. */
+  article?: string;
+  /** Código de barras del fabricante. Independiente del código interno. */
+  ean?: string;
   place: Place;
   expires: ISODate | '';
   /** Precio por g, ml o unidad. */

@@ -1,6 +1,7 @@
 // Estado inicial de un hogar nuevo y contenido de ejemplo opcional.
 import { exampleCatalog } from './catalog';
 import { day } from './dates';
+import { withCheckDigit } from './estructura';
 import { COMMON, type AvatarColor, type Member, type State } from './types';
 
 export const AVATAR_COLORS: AvatarColor[] = ['peach', 'purple', 'mint', 'sky', 'rose', 'sand'];
@@ -45,17 +46,21 @@ export function withDemoContent(s: State): State {
   const pet = d.household.pets[0]?.name ?? 'la mascota';
   const all = d.household.members.filter((m) => m.active).map((m) => m.id);
   const first = all[0];
+  // EAN de ejemplo con prefijo 200 (reservado para uso interno: no son productos reales).
+  const ean = (n: number) => withCheckDigit('2000000' + String(n).padStart(5, '0'));
   d.items.push(
-    { id: 'lentil', name: 'Lentejas cocidas', qty: 1200, unit: 'g', section: 11, place: 'Despensa', expires: day(180), price: 0.003, emoji: '🫘', protein: 7 },
-    { id: 'zucchini', name: 'Calabacín', qty: 650, unit: 'g', section: 25, place: 'Nevera', expires: day(1), price: 0.002, emoji: '🥒', protein: 1.2 },
-    { id: 'carrot', name: 'Zanahoria', qty: 500, unit: 'g', section: 25, place: 'Nevera', expires: day(5), price: 0.0015, emoji: '🥕', protein: 0.9 },
-    { id: 'rice', name: 'Arroz integral', qty: 1000, unit: 'g', section: 11, place: 'Despensa', expires: day(180), price: 0.002, emoji: '🍚', protein: 7.5 },
-    { id: 'tofu', name: 'Tofu firme', qty: 600, unit: 'g', section: 21, place: 'Nevera', expires: day(3), price: 0.007, emoji: '◻️', protein: 13 },
-    { id: 'peas', name: 'Guisantes congelados', qty: 800, unit: 'g', section: 13, place: 'Congelador', expires: day(120), price: 0.003, emoji: '🫛', protein: 5 },
-    { id: 'spinach', name: 'Espinacas', qty: 200, unit: 'g', section: 25, place: 'Nevera', expires: day(2), price: 0.006, emoji: '🥬', protein: 2.9 },
-    { id: 'oil', name: 'Aceite de oliva', qty: 750, unit: 'ml', section: 11, place: 'Despensa', expires: day(240), price: 0.008, emoji: '🫒', protein: 0 },
-    { id: 'paper', name: 'Papel higiénico', qty: 4, unit: 'ud', section: 14, place: 'Hogar', expires: '', price: 0.45, emoji: '🧻', protein: 0 },
-    { id: 'petfood', name: `Comida de ${pet}`, qty: 6, unit: 'ud', section: 11, place: 'Despensa', expires: day(200), price: 1.25, emoji: '🐈', protein: 0 },
+    { id: 'lentil', name: 'Lentejas cocidas', qty: 1200, unit: 'g', section: 11, type: '110501', article: '001', ean: ean(1), place: 'Despensa', expires: day(180), price: 0.003, emoji: '🫘', protein: 7 },
+    { id: 'zucchini', name: 'Calabacín', qty: 650, unit: 'g', section: 25, type: '250202', article: '001', place: 'Nevera', expires: day(1), price: 0.002, emoji: '🥒', protein: 1.2 },
+    { id: 'carrot', name: 'Zanahoria', qty: 500, unit: 'g', section: 25, type: '250304', article: '001', place: 'Nevera', expires: day(5), price: 0.0015, emoji: '🥕', protein: 0.9 },
+    // Dos arroces integrales: EAN sin nada en común, código interno casi igual (11.02.02.001 y .002).
+    { id: 'rice', name: 'Arroz integral · paquete 1 kg', qty: 1000, unit: 'g', section: 11, type: '110202', article: '001', ean: ean(2), place: 'Despensa', expires: day(180), price: 0.0021, emoji: '🍚', protein: 7.5 },
+    { id: 'rice-5kg', name: 'Arroz integral · saco 5 kg', qty: 5000, unit: 'g', section: 11, type: '110202', article: '002', ean: withCheckDigit('200987654321'), place: 'Despensa', expires: day(300), price: 0.0019, emoji: '🍚', protein: 7.8 },
+    { id: 'tofu', name: 'Tofu firme', qty: 600, unit: 'g', section: 21, type: '210101', article: '001', ean: ean(3), place: 'Nevera', expires: day(3), price: 0.007, emoji: '◻️', protein: 13 },
+    { id: 'peas', name: 'Guisantes congelados', qty: 800, unit: 'g', section: 13, type: '130101', article: '001', place: 'Congelador', expires: day(120), price: 0.003, emoji: '🫛', protein: 5 },
+    { id: 'spinach', name: 'Espinacas', qty: 200, unit: 'g', section: 25, type: '250102', article: '001', place: 'Nevera', expires: day(2), price: 0.006, emoji: '🥬', protein: 2.9 },
+    { id: 'oil', name: 'Aceite de oliva virgen extra', qty: 750, unit: 'ml', section: 11, type: '110101', article: '001', ean: ean(4), place: 'Despensa', expires: day(240), price: 0.008, emoji: '🫒', protein: 0 },
+    { id: 'paper', name: 'Papel higiénico', qty: 4, unit: 'ud', section: 14, type: '140401', article: '001', place: 'Hogar', expires: '', price: 0.45, emoji: '🧻', protein: 0 },
+    { id: 'petfood', name: `Comida de ${pet}`, qty: 6, unit: 'ud', section: 17, type: '170101', article: '001', place: 'Despensa', expires: day(200), price: 1.25, emoji: '🐈', protein: 0 },
   );
   d.recipes.push(
     {
@@ -81,7 +86,8 @@ export function withDemoContent(s: State): State {
       emoji: '🍛',
       servings: 2,
       ingredients: [
-        { itemId: 'rice', amount: 150, optional: false },
+        // Cualquier arroz integral: gasta primero el que caduque antes, sea de la marca que sea.
+        { itemId: 'tipo:110202', amount: 150, optional: false },
         { itemId: 'tofu', amount: 250, optional: false },
         { itemId: 'peas', amount: 150, optional: false },
       ],

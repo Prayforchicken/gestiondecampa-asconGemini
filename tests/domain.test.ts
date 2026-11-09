@@ -6,10 +6,11 @@ import type { Op, OpBody } from '../src/domain/ops';
 import { addMonths, day, mondayOf } from '../src/domain/dates';
 import { kitDues, kitFromTemplate, kitHealth, kitsToIcs, KIT_TEMPLATES, pendingDues, visibleKits } from '../src/domain/kits';
 import { balances, settleUp } from '../src/domain/money';
-import { buildAbacoTree, departmentSummary, parseAbacoRows, searchAbaco, classificationPath } from '../src/domain/abaco';
+import { DEPARTMENTS, TYPES, findType, formatCode, guessType, isValidEan, parseEstructura, searchTypes, withCheckDigit } from '../src/domain/estructura';
+import { lotsFor, stockFor } from '../src/domain/stock';
 import { duplicateCampaign, importCampaigns, newCampaign, safeUrl } from '../src/domain/campaigns';
 import { migrateV1 } from '../src/domain/migrate';
-import { unitPrice, nutrition } from '../src/domain/catalog';
+import { unitPrice, nutrition, upgradeCatalog } from '../src/domain/catalog';
 import { COMMON, type State } from '../src/domain/types';
 
 let n = 0;
@@ -158,26 +159,84 @@ test('kits: calendario .ics válido', () => {
   for (const line of ics.split('\r\n')) assert.ok(new TextEncoder().encode(line).length <= 75, 'línea demasiado larga: ' + line);
 });
 
-test('Ábaco: lee el export SQL, filtra departamentos y busca sin tildes', () => {
-  const sql = `CREATE TABLE "abaco_estructura" ("cod_total" text,"desc_total" text,"cod_tienda" text,"desc_tienda" text,"cod_departamento" text,"desc_departamento" text,"cod_rayon" text,"desc_rayon" text,"cod_familia" text,"desc_familia" text,"cod_subfamilia" text,"desc_subfamilia" text);
-INSERT INTO "abaco_estructura" ("cod_total", "desc_total", "cod_tienda", "desc_tienda", "cod_departamento", "desc_departamento", "cod_rayon", "desc_rayon", "cod_familia", "desc_familia", "cod_subfamilia", "desc_subfamilia") VALUES
-('01', 'TOTAL', '01', 'TOTAL TIENDA', '01', 'PGC', '0011', 'ALIMENTACION SECA', '00001', 'ACEITES', '000001', 'OLIVA VIRGEN EXTRA'),
-('01', 'TOTAL', '01', 'TOTAL TIENDA', '01', 'PGC', '0011', 'ALIMENTACION SECA', '00001', 'ACEITES', '000002', 'GIRASOL'),
-('01', 'TOTAL', '01', 'TOTAL TIENDA', '02', 'FRESCOS', '0021', 'CARNICERIA', '00300', 'VACUNO', '003001', 'FILETES'),
-('01', 'TOTAL', '01', 'TOTAL TIENDA', '03', 'TEXTIL', '0031', 'TEXTIL CABALLERO', '00400', 'CAMISAS', '004001', 'MANGA ''LARGA'''),
-('01', 'TOTAL', '01', 'TOTAL TIENDA', '99', 'Rayon anomalies', '1021', 'Rayon anomalies', '10211', 'Famille EAN inconnus', '102111', 'Sous-famille EAN inconnus');`;
-  const rows = parseAbacoRows(sql);
-  assert.equal(rows.length, 5);
-  assert.equal(rows[3].desc_subfamilia, "MANGA 'LARGA'");
-  assert.deepEqual(departmentSummary(rows).map((d) => d.code), ['01', '02', '03']);
-  const tree = buildAbacoTree(rows, ['01', '02']);
-  assert.deepEqual(tree.rayons.map((r) => r.code), [11, 21]);
-  assert.equal(tree.rayons[1].name, 'Proteínas vegetales (seitán, tempeh, tofu)', 'nombre propio del hogar');
-  const hits = searchAbaco(tree, 'oliva');
-  assert.equal(hits[0].subfamily, '000001');
-  assert.equal(classificationPath(tree, 11, '00001', '000001'), 'Alimentacion seca › Aceites › Oliva virgen extra');
-  const csv = 'cod_departamento;desc_departamento;cod_rayon;desc_rayon;cod_familia;desc_familia;cod_subfamilia;desc_subfamilia\n01;PGC;0014;DROGUERIA;00010;DETERGENTES;000100;LIQUIDOS';
-  assert.equal(buildAbacoTree(parseAbacoRows(csv)).rayons[0].families[0].subs[0].name, 'Liquidos');
+test('estructura propia: códigos bien formados y sin repetir', () => {
+  const sections = DEPARTMENTS.flatMap((d) => d.sections);
+  assert.ok(TYPES.length > 200, 'estructura completa');
+  for (const d of DEPARTMENTS) for (const s of d.sections) assert.equal(String(s.code)[0], String(d.code), `sección ${s.code} fuera de su departamento`);
+  assert.equal(new Set(sections.map((s) => s.code)).size, sections.length, 'secciones repetidas');
+  assert.equal(new Set(TYPES.map((t) => t.code)).size, TYPES.length, 'tipos repetidos');
+  for (const t of TYPES) assert.match(t.code, /^\d{6}$/);
+  // Números que el hogar ya conoce
+  assert.equal(sections.find((s) => s.code === 13)!.name, 'Congelados');
+  assert.match(sections.find((s) => s.code === 21)!.name, /Proteínas vegetales/);
+  assert.match(sections.find((s) => s.code === 24)!.name, /algas/);
+  assert.throws(() => parseEstructura('1 Despensa\n  21 Mal puesta'), /empieza por su departamento/);
+});
+
+test('buscar y adivinar tipos sin tildes, por sinónimo o por código', () => {
+  assert.equal(guessType('Arroz integral SOS 1 kg')?.code, '110202');
+  assert.equal(guessType('Lentejas pardinas cocidas bote')?.name, 'Lentejas cocidas');
+  assert.equal(guessType('Pilas AAA alcalinas')?.code.slice(0, 2), '42');
+  assert.equal(guessType('Tofu ahumado')?.name, 'Tofu ahumado y marinado');
+  assert.equal(searchTypes('pardina')[0].name, 'Lentejas secas');
+  assert.equal(searchTypes('11.02')[0].code.slice(0, 4), '1102');
+  assert.equal(findType('110202')?.protein, 7.5);
+  assert.equal(formatCode('110202001'), '11.02.02.001');
+});
+
+test('EAN: dígito de control', () => {
+  assert.ok(isValidEan('4006381333931'));
+  assert.ok(!isValidEan('4006381333932'));
+  assert.equal(withCheckDigit('400638133393'), '4006381333931');
+  assert.ok(isValidEan('96385074'), 'EAN-8');
+  assert.ok(!isValidEan('12345'));
+});
+
+test('códigos internos: dos arroces con EAN distintos, código casi igual', () => {
+  let s = newHousehold({ name: 'Piso', people: ['Ana'], pets: [] }, ids);
+  const a = { id: 'a1', name: 'Arroz integral SOS', qty: 1000, unit: 'g', section: 11, type: '110202', ean: withCheckDigit('841000000001'), place: 'Despensa', expires: '', price: 0, emoji: '🍚', protein: 7.5 };
+  const b = { ...a, id: 'b1', name: 'Arroz integral marca blanca', ean: withCheckDigit('848000000002') };
+  s = apply(s, { type: 'upsert', collection: 'items', entity: a });
+  s = apply(s, { type: 'upsert', collection: 'items', entity: b });
+  const [x, y] = s.items;
+  assert.equal(`${x.type}${x.article}`, '110202001');
+  assert.equal(`${y.type}${y.article}`, '110202002');
+  assert.notEqual(x.ean, y.ean);
+  // Un lote nuevo del mismo artículo hereda código y EAN.
+  s = apply(s, { type: 'upsert', collection: 'items', entity: { ...a, id: 'a2', productId: 'a1', ean: undefined, article: undefined, qty: 500 } });
+  const lot = s.items.find((i) => i.id === 'a2')!;
+  assert.equal(lot.article, '001');
+  assert.equal(lot.ean, x.ean);
+  // El mismo EAN no puede ser de dos artículos distintos.
+  assert.throws(() => apply(s, { type: 'upsert', collection: 'items', entity: { ...a, id: 'c1', name: 'Otro' } }), /ya es de/);
+  // Reclasificar un artículo le da número nuevo en su tipo y sus lotes lo siguen.
+  s = apply(s, { type: 'patch', collection: 'items', entityId: 'a1', fields: { type: '110201' } });
+  assert.equal(s.items.find((i) => i.id === 'a1')!.type, '110201');
+  assert.equal(s.items.find((i) => i.id === 'a2')!.type, '110201');
+  assert.equal(s.items.find((i) => i.id === 'a1')!.section, 11);
+});
+
+test('códigos internos: dos móviles sin conexión nunca repiten número', () => {
+  const s = newHousehold({ name: 'Piso', people: ['Ana', 'Leo'], pets: [] }, ids);
+  const base = { qty: 1, unit: 'g', section: 11, type: '110401', place: 'Despensa', expires: '', price: 0, emoji: '🫘', protein: 24 };
+  // Los dos crean «su» artículo 001 a la vez (sin ver el del otro).
+  const oa = op(s, { type: 'upsert', collection: 'items', entity: { ...base, id: 'pardina', name: 'Lenteja pardina', article: '001' } });
+  const ob = op(s, { type: 'upsert', collection: 'items', entity: { ...base, id: 'roja', name: 'Lenteja roja', article: '001' } });
+  const r = replay(s, [oa, ob]);
+  assert.deepEqual(r.state.items.map((i) => i.article), ['001', '002']);
+  assert.deepEqual(replay(s, [oa, ob]).state, r.state, 'mismo resultado en todos los móviles');
+});
+
+test('recetas por tipo: gastan cualquier marca, primero la que caduca antes', () => {
+  const s = home();
+  const rice = (st: State) => st.items.filter((i) => i.type === '110202');
+  assert.equal(stockFor(s, 'tipo:110202'), 6000);
+  assert.equal(lotsFor(s, 'tipo:110202')[0].id, 'rice', 'caduca antes');
+  const r = s.recipes.find((x) => x.id === 'rice-tofu')!;
+  const amounts = r.ingredients.map((g) => (g.itemId === 'tipo:110202' ? 1100 : g.amount));
+  const cooked = apply(s, { type: 'cook', recipeId: r.id, amounts, yieldGrams: 900, review: day(1), date: day(), tupperId: 'tt' });
+  assert.equal(rice(cooked).find((i) => i.id === 'rice')!.qty, 0);
+  assert.equal(rice(cooked).find((i) => i.id === 'rice-5kg')!.qty, 4900);
 });
 
 test('campañas: plantillas con fechas, duplicado e importación de la app antigua', () => {
@@ -228,7 +287,9 @@ test('migración desde comemos 0.1', () => {
   assert.equal(adrian.name, 'Adrián');
   assert.equal(s.expenses[0].payer, rali.id);
   assert.deepEqual(s.expenses[0].split, [adrian.id, rali.id]);
-  assert.equal(s.items[0].section, 21, 'sección 2 (tofu) pasa al rayón 21');
+  assert.equal(s.items[0].section, 21, 'sección 2 (tofu) pasa a la 21');
+  assert.equal(s.items[0].type, '210101', 'se clasifica por su nombre');
+  assert.equal(s.items[0].article, '001');
   assert.equal(s.consumptions.length, 0, 'se quitan los datos ficticios');
 });
 
@@ -236,6 +297,9 @@ test('comparador: el saco de 20 kg es más caro por envase y más barato por kil
   const c = home().catalog;
   assert.ok(c.offers[1].price > c.offers[0].price);
   assert.ok(unitPrice(c.offers[1]) < unitPrice(c.offers[0]));
-  assert.equal(nutrition(c, c.offers[0]).value, 7.5);
-  assert.equal(nutrition(c, c.offers[2]).value, 7.8);
+  assert.equal(nutrition(c.offers[0]).value, 7.5, 'estimación del tipo en la estructura');
+  assert.equal(nutrition(c.offers[2]).value, 7.8, 'la etiqueta prevalece');
+  // Un catálogo antiguo (v1) se convierte adivinando el tipo por su nombre.
+  const old = { version: 1, sections: [], families: [], types: [{ id: 'T', familyId: 'F', name: 'Arroz integral seco', basis: 'seco', proteinPer100: 7.5 }], providers: [{ id: 'P', name: 'X' }], offers: [{ id: 'o', providerId: 'P', typeId: 'T', label: 'Arroz', packQty: 1, unit: 'kg', price: 2, proteinPer100: null, date: day() }] };
+  assert.equal(upgradeCatalog(old).offers[0].type, '110202');
 });

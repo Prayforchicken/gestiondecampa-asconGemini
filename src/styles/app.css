@@ -188,3 +188,55 @@
   .today-grid .spaced-card, .today-grid .urgent-card, .today-grid .ai-banner { margin-top: 0; }
   .today-grid .quiet-note { display: none; }
 }
+
+/* ---------- Códigos internos y estructura ---------- */
+.code-tag { display: inline-flex; align-items: baseline; font: 500 10.5px/1 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .2px; background: #eef3ef; color: #4d6d58; border-radius: 5px; padding: 3px 5px; white-space: nowrap; }
+.code-tag strong { font-weight: 700; color: #2f5d43; }
+.code-tag.muted { color: #9aa49a; background: #f3f4f2; }
+.item-name small .code-tag { margin-right: 4px; vertical-align: 1px; }
+.type-chosen { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #f4f8f4; border: 1px solid #dfe9e0; border-radius: 10px; padding: 10px 12px; margin-top: 8px; font-size: 12px; color: #4f6352; }
+.type-chosen > span:nth-child(2) { flex: 1; min-width: 160px; }
+.type-suggestion { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%; text-align: left; background: #fff8ec; border: 1px dashed #ecd3a8; border-radius: 10px; padding: 10px 12px; margin: 8px 0; font-size: 12px; color: #7b6440; }
+.type-suggestion small { color: #a58e67; margin-left: auto; }
+.class-results strong .code-tag { margin-left: 6px; }
+.code-preview { font-size: 12px; color: #4f6352; margin-top: 10px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.code-preview small { color: #98a395; }
+.field-warning { font-size: 11px; color: #a46a3d; background: #fff4ea; border: 1px solid #f2dcc7; border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
+.field-warning.info { color: #4f6b85; background: #edf4fa; border-color: #d3e3f0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.siblings { margin: 4px 0 18px; display: grid; gap: 4px; }
+.siblings button { display: flex; align-items: center; gap: 8px; text-align: left; font-size: 12px; padding: 8px 10px; border-radius: 8px; background: #f7f9f6; }
+.siblings button small { margin-left: auto; color: #95a090; }
+.offer.best { border-color: #b9d6c3; background: #f7fbf8; }
+.offer .pill + .pill { margin-left: 6px; }
+
+.type-groups { display: grid; gap: 14px; }
+.type-group { padding: 6px 0; overflow: hidden; }
+.type-group header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid #eff1ed; }
+.type-group header > div { flex: 1; min-width: 0; }
+.type-group header strong { font-size: 13px; display: block; }
+.type-group header small { font-size: 10px; color: #9aa596; }
+.type-total { font-size: 13px; font-weight: 600; color: #3f5d48; white-space: nowrap; }
+.type-article { display: grid; grid-template-columns: 112px minmax(0, 1fr) 90px; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 11px 20px; border-bottom: 1px solid #f3f4f1; font-size: 12px; }
+.type-article:last-child { border-bottom: 0; }
+.type-article:hover { background: #fafcf9; }
+.type-article-name small { display: block; font-size: 10px; color: #9ba596; margin-top: 3px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.type-article .stock-number { text-align: right; }
+
+.tree { margin-top: 14px; max-height: 60vh; overflow-y: auto; }
+.tree-dept h3 { font-size: 12px; letter-spacing: .5px; text-transform: uppercase; color: #8c9887; margin: 18px 0 6px; }
+.tree-section > button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 9px 4px; border-bottom: 1px solid #f0f2ee; font-size: 13px; font-weight: 600; color: #3e4f43; }
+.tree-section > button small { margin-left: auto; font-weight: 400; color: #9aa596; font-size: 10px; }
+.tree-section > button svg { color: #a9b2a6; transition: transform .15s; }
+.tree-section > button svg.rot { transform: rotate(90deg); }
+.tree-family { padding: 8px 0 8px 18px; border-left: 2px solid #eef2ee; margin: 6px 0 6px 10px; }
+.tree-family > strong { font-size: 12px; color: #4c5e50; display: flex; gap: 6px; align-items: center; }
+.tree-family p { font-size: 12px; color: #5f6f62; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0 0 4px; line-height: 1.4; }
+.tree-family p small { color: #9aa596; }
+.tree-family .pill { margin-left: auto; }
+
+@media (max-width: 700px) {
+  .type-article { grid-template-columns: minmax(0, 1fr) 70px; padding: 11px 14px; }
+  .type-article .code-cell { grid-column: 1 / -1; }
+  .type-group header { padding: 12px 14px; }
+  .toolbar .segmented button { padding: 8px 12px; }
+}

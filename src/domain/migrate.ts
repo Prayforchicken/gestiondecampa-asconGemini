@@ -1,8 +1,8 @@
 // Migración desde las versiones anteriores:
 //  - «comemos» 0.1 (localStorage `comemos-demo-v1`), pensada solo para Adrián y Rali.
 //  - «Gestor de campañas» (localStorage `campaigns`).
-import { exampleCatalog } from './catalog';
-import { day } from './dates';
+import { upgradeCatalog } from './catalog';
+import { guessType, nextArticle } from './estructura';
 import { makeMember } from './seed';
 import { COMMON, type Item, type MemberId, type State } from './types';
 import { importCampaigns } from './campaigns';
@@ -22,14 +22,16 @@ export function migrateV1(v1: any, ids: () => string): State | null {
     version: 2,
     revision: Number(v1.revision) || 0,
     household: { name: 'Nuestro hogar', members: [adrian, rali], pets: [{ id: ids(), name: 'Lenny', emoji: '🐈' }] },
-    catalog: v1.catalog ?? exampleCatalog(day()),
-    items: v1.items.map(
-      (i: any): Item => ({
-        ...i,
-        section: SECTION_FIX[i.section] ?? i.section,
-        place: PLACE_OK.has(i.place) ? i.place : 'Despensa',
-        expires: i.expires ?? '',
-      }),
+    catalog: upgradeCatalog(v1.catalog),
+    items: classify(
+      v1.items.map(
+        (i: any): Item => ({
+          ...i,
+          section: SECTION_FIX[i.section] ?? i.section,
+          place: PLACE_OK.has(i.place) ? i.place : 'Despensa',
+          expires: i.expires ?? '',
+        }),
+      ),
     ),
     recipes: v1.recipes,
     tuppers: v1.tuppers ?? [],
@@ -45,6 +47,21 @@ export function migrateV1(v1: any, ids: () => string): State | null {
     applied: v1.applied ?? [],
     log: (v1.log ?? []).slice(0, 50).map((l: any) => ({ ...l, by: adrian.id })),
   };
+}
+
+/** Da tipo y número de artículo a los artículos antiguos, adivinando por su nombre. */
+function classify(items: Item[]): Item[] {
+  const out: Item[] = [];
+  for (const i of items) {
+    if (i.productId && i.productId !== i.id) {
+      const root = out.find((r) => r.id === i.productId);
+      out.push(root?.type ? { ...i, type: root.type, article: root.article, section: root.section } : i);
+      continue;
+    }
+    const t = guessType(i.name);
+    out.push(t ? { ...i, type: t.code, section: Number(t.code.slice(0, 2)), article: nextArticle(out, t.code) } : i);
+  }
+  return out;
 }
 
 /** Añade las campañas guardadas por la app antigua (si las hay) al primer miembro. */

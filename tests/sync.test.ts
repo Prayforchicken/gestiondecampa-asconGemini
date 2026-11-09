@@ -87,18 +87,6 @@ test('dos móviles comparten el hogar y resuelven conflictos igual', async () =>
   assert.deepEqual(ana.getSnapshot().state, leo.getSnapshot().state);
 });
 
-test('la estructura de clasificación se comparte por el servidor', async () => {
-  const ana = new HouseholdStore(memoryKV());
-  const s = newHousehold({ name: 'Casa', people: ['Ana', 'Leo'], pets: [] }, ids);
-  ana.createLocal(s, s.household.members[0].id);
-  const invite = await ana.connectNew(url);
-  ana.setAbaco({ version: 1, importedAt: '2026-11-09T10:00:00.000Z', departments: [{ code: '01', name: 'PGC' }], rayons: [{ code: 11, name: 'Alimentacion seca', dept: '01', families: [] }] });
-  await new Promise((ok) => setTimeout(ok, 50));
-  const leo = new HouseholdStore(memoryKV());
-  await leo.join(invite);
-  assert.equal(leo.getSnapshot().abaco?.rayons[0].code, 11);
-});
-
 test('el servidor rechaza claves incorrectas y datos no válidos', async () => {
   const ana = new HouseholdStore(memoryKV());
   const s = newHousehold({ name: 'Casa', people: ['Ana'], pets: [] }, ids);
